@@ -39,6 +39,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClassFile\BigEndianBinaryReader.cs" />
+    <Compile Include="ClassFile\ClassFile.cs" />
+    <Compile Include="ClassFile\ClassFileLoader.cs" />
+    <Compile Include="ClassFile\ConstantPool\ConstantPoolItem.cs" />
+    <Compile Include="Exceptions\ClassFileFormatException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
