@@ -39,10 +39,29 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClassFile\BigEndianBinaryReader.cs" />
+    <Compile Include="ClassFile\ClassAccessFlag.cs" />
+    <Compile Include="ClassFile\ConstantPool\ConstantPoolItemType.cs" />
+    <Compile Include="ClassFile\ConstantPool\ClassConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\DoubleConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\FieldRefConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\FloatConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\IntegerConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\InterfaceMethodRefConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\InvokeDynamicConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\LongConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\MethodHandleConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\MethodRefConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\MethodTypeConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\NameAndTypeConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\RefConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\StringConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\Utf8ConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\ValueConstantPoolItem.cs" />
+    <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
     <Compile Include="ClassFile\ClassFile.cs" />
-    <Compile Include="ClassFile\ClassFileLoader.cs" />
+    <Compile Include="ClassFile\Loader\ClassFileLoader.cs" />
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItem.cs" />
+    <Compile Include="ClassFile\VersionInfo.cs" />
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
