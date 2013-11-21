@@ -57,6 +57,8 @@
     <Compile Include="ClassFile\ConstantPool\StringConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\Utf8ConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\ValueConstantPoolItem.cs" />
+    <Compile Include="ClassFile\FieldAccessFlag.cs" />
+    <Compile Include="ClassFile\FieldInfo.cs" />
     <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
     <Compile Include="ClassFile\ClassFile.cs" />
     <Compile Include="ClassFile\Loader\ClassFileLoader.cs" />

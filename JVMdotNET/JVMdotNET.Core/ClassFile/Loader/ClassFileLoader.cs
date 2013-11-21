@@ -36,9 +36,50 @@ namespace JVMdotNET.Core.ClassFile.Loader
             //super class
             int superIndex = reader.ReadUInt16();
 
+            //interfaces
+            int[] interfaces = LoadInterfaces(reader);
 
+            //fields
+            FieldInfo[] fields = LoadFields(reader);
 
             return null;
+        }
+
+        private FieldInfo[] LoadFields(BigEndianBinaryReader reader)
+        {
+            int fieldsLength = reader.ReadUInt16();
+            FieldInfo[] fields = new FieldInfo[fieldsLength];
+
+            for (int i = 0; i < fieldsLength; i++)
+            {
+                fields[i] = LoadFieldInfo(reader);
+            }
+
+            return fields;
+        }
+
+        private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader)
+        {
+            FieldAccessFlag flag = (FieldAccessFlag)reader.ReadUInt16();
+            int nameIndex = reader.ReadUInt16() - 1;
+            int descriptorIndex = reader.ReadUInt16() - 1;
+
+            //TODO: Load Attributes
+
+            return new FieldInfo(flag, nameIndex, descriptorIndex);
+        }
+
+        private int[] LoadInterfaces(BigEndianBinaryReader reader)
+        {
+            int interfacesLength = reader.ReadUInt16();
+            int[] interfaces = new int[interfacesLength];
+
+            for (int i = 0; i < interfacesLength; i++)
+            {
+                interfaces[i] = reader.ReadUInt16() - 1;
+            }
+
+            return interfaces;
         }
 
         private ConstantPoolItem[] LoadConstantPool(BigEndianBinaryReader reader)
