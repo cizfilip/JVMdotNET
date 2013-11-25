@@ -5,9 +5,14 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class MethodRefConstantPoolItem : RefConstantPoolItem
+    internal class MethodRefConstantPoolItem : RefConstantPoolItem
     {
         public MethodRefConstantPoolItem(int classIndex, int nameAndTypeIndex)
             : base(classIndex, nameAndTypeIndex) { }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.MethodRef; }
+        }
     }
 }

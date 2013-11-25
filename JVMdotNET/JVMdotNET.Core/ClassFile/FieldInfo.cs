@@ -8,16 +8,15 @@ namespace JVMdotNET.Core.ClassFile
 {
     class FieldInfo
     {
-        private FieldAccessFlag accessFlag;
-        private int nameIndex;
-        private int descriptorIndex;
+        public FieldAccessFlag AccessFlag { get; private set; }
+        public string Name { get; private set; }
+        public string Descriptor { get; private set; }
 
-
-        public FieldInfo(FieldAccessFlag accessFlag, int nameIndex, int descriptorIndex)
+        public FieldInfo(FieldAccessFlag accessFlag, string name, string descriptor)
         {
-            this.accessFlag = accessFlag;
-            this.nameIndex = nameIndex;
-            this.descriptorIndex = descriptorIndex;
+            this.AccessFlag = accessFlag;
+            this.Name = name;
+            this.Descriptor = descriptor;
         }
     }
 }

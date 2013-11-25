@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>JVMdotNET.Core</RootNamespace>
     <AssemblyName>JVMdotNET.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,6 +40,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClassFile\Attributes\AnnotationDefaultAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\AttributeBase.cs" />
+    <Compile Include="ClassFile\Attributes\BootstrapMethodsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\CodeAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\ConstantValueAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\DeprecatedAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\EnclosingMethodAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\ExceptionsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\InnerClassesAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\LineNumberTableAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\LocalVariableTableAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\LocalVariableTypeTableAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\RuntimeInvisibleAnnotationsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\RuntimeInvisibleParameterAnnotationsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\RuntimeVisibleAnnotationsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\RuntimeVisibleParameterAnnotationsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\SignatureAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\SourceDebugExtensionAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\SourceFileAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\StackMapTableAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\SyntheticAttribute.cs" />
     <Compile Include="ClassFile\ClassAccessFlag.cs" />
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemType.cs" />
     <Compile Include="ClassFile\ConstantPool\ClassConstantPoolItem.cs" />
@@ -59,14 +81,16 @@
     <Compile Include="ClassFile\ConstantPool\ValueConstantPoolItem.cs" />
     <Compile Include="ClassFile\FieldAccessFlag.cs" />
     <Compile Include="ClassFile\FieldInfo.cs" />
+    <Compile Include="ClassFile\MethodAccessFlag.cs" />
     <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
     <Compile Include="ClassFile\ClassFile.cs" />
     <Compile Include="ClassFile\Loader\ClassFileLoader.cs" />
-    <Compile Include="ClassFile\ConstantPool\ConstantPoolItem.cs" />
+    <Compile Include="ClassFile\ConstantPool\ConstantPoolItemBase.cs" />
     <Compile Include="ClassFile\VersionInfo.cs" />
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

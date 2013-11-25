@@ -5,8 +5,13 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class FloatConstantPoolItem : ValueConstantPoolItem<float>
+    internal class FloatConstantPoolItem : ValueConstantPoolItem<float>
     {
         public FloatConstantPoolItem(float value) : base(value) { }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.Float; }
+        }
     }
 }

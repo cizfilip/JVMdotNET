@@ -6,13 +6,23 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class ValueConstantPoolItem<T> : ConstantPoolItem where T : struct
+    internal abstract class ValueConstantPoolItem<T> : ConstantPoolItemBase
     {
-        private T value;
+        public T Value { get; protected set; }
 
         public ValueConstantPoolItem(T value)
         {
-            this.value = value;
+            this.Value = value;
         }
+
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        {
+            //noop
+        }
+
+        //public override ConstantPoolItemType Type
+        //{
+        //    get { throw new NotImplementedException(); }
+        //}
     }
 }

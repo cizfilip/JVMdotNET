@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    public class ClassFile
+    internal class ClassFile
     {
-        private ConstantPoolItem[] constantPool;
+        private ConstantPoolItemBase[] constantPool;
 
-        public ClassFile(ConstantPoolItem[] constantPool)
+        public ClassFile(ConstantPoolItemBase[] constantPool)
         {
             this.constantPool = constantPool;
         }

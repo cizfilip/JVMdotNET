@@ -5,8 +5,13 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class LongConstantPoolItem : ValueConstantPoolItem<long>
+    internal class LongConstantPoolItem : ValueConstantPoolItem<long>
     {
         public LongConstantPoolItem(long value) : base(value) { }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.Long; }
+        }
     }
 }

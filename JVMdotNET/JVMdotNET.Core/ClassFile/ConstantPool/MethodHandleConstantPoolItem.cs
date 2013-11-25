@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class MethodHandleConstantPoolItem : ConstantPoolItem
+    internal class MethodHandleConstantPoolItem : ConstantPoolItemBase
     {
         private byte referenceKind;
         private int referenceIndex;
@@ -14,6 +14,17 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
         {
             this.referenceKind = referenceKind;
             this.referenceIndex = referenceIndex;
+        }
+
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        {
+            //TODO: implement this
+            throw new NotImplementedException();
+        }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.MethodHandle; }
         }
     }
 }

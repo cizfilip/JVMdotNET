@@ -5,8 +5,13 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class Utf8ConstantPoolItem : ValueConstantPoolItem<string>
+    internal class Utf8ConstantPoolItem : ValueConstantPoolItem<string>
     {
         public Utf8ConstantPoolItem(string value) : base(value) { }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.Utf8; }
+        }
     }
 }

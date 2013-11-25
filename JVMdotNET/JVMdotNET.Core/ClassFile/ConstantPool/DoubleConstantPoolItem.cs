@@ -5,8 +5,13 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    class DoubleConstantPoolItem : ValueConstantPoolItem<double>
+    internal class DoubleConstantPoolItem : ValueConstantPoolItem<double>
     {
-        public DoubleConstantPoolItem(double value) : base(value) {}
+        public DoubleConstantPoolItem(double value) : base(value) { }
+
+        public override ConstantPoolItemType Type
+        {
+            get { return ConstantPoolItemType.Double; }
+        }
     }
 }

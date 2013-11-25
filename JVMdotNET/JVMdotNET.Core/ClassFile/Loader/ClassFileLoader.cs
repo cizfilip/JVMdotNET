@@ -10,8 +10,13 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile.Loader
 {
-    public class ClassFileLoader
+    //TODO: Stop metoda na threadu vyvolava asynchroni exception nejak resit az budu delat thready viz specifikace- kap. 2.10.
+    internal class ClassFileLoader
     {
+        private ClassFile classFile;
+
+        private ConstantPoolItemBase[] constantPool;
+
         public ClassFile Load(Stream input)
         {
             var reader = new BigEndianBinaryReader(input);
@@ -25,24 +30,65 @@ namespace JVMdotNET.Core.ClassFile.Loader
             var versionInfo = new VersionInfo(reader.ReadUInt16(), reader.ReadUInt16());
 
             //ConstantPool Loading
-            var constantPool = LoadConstantPool(reader);
+            this.constantPool = LoadConstantPool(reader);
             
             //Class access flags
             var accessFlag = (ClassAccessFlag)reader.ReadUInt16();
 
             //this class
-            int thisIndex = reader.ReadUInt16();
-
+            ClassConstantPoolItem thisClass = GetConstantPoolItem<ClassConstantPoolItem>(reader.ReadUInt16());
+            
             //super class
-            int superIndex = reader.ReadUInt16();
+            ClassConstantPoolItem superClass = GetConstantPoolItem<ClassConstantPoolItem>(reader.ReadUInt16());
+            //TODO: validation
+            //if (IsInterface && (super_class == 0 || this.SuperClass != "java.lang.Object"))
+            //{
+            //    throw new ClassFormatError("{0} (Interfaces must have java.lang.Object as superclass)", Name);
+            //}
 
             //interfaces
-            int[] interfaces = LoadInterfaces(reader);
+            ClassConstantPoolItem[] interfaces = LoadInterfaces(reader);
+
 
             //fields
             FieldInfo[] fields = LoadFields(reader);
 
+
+
+            //TODO: Checkovat zda-li plati pri nacitani metody init nasledujici:
+            //In a  class file whose version number is 51.0 or above, the method must
+            //additionally have its  ACC_STATIC flag (§4.6) set in order to be the class or interface
+            //initialization method.
+
+
+            //Remove utf8 items (not needed after all is loaded and resolved)
+            //for (int i = 0; i < constantPool.Length; i++)
+            //{
+            //    var item = constantPool[i];
+            //    if (item != null && item.Type == ConstantPoolItemType.Utf8)
+            //    {
+            //        constantPool[i] = null;
+            //    }
+            //}
+
             return null;
+        }
+
+        private T GetConstantPoolItem<T>(int index) where T : ConstantPoolItemBase
+        {
+            if (index <= 0 || index >= constantPool.Length)
+            {
+                throw new ClassFileFormatException("Constant pool index out of range.");
+            }
+
+            T result = constantPool[index] as T;
+
+            if (result == null)
+            {
+                throw new ClassFileFormatException(string.Format("Invalid constant pool item at {0}.", index));
+            }
+
+            return result;
         }
 
         private FieldInfo[] LoadFields(BigEndianBinaryReader reader)
@@ -61,33 +107,33 @@ namespace JVMdotNET.Core.ClassFile.Loader
         private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader)
         {
             FieldAccessFlag flag = (FieldAccessFlag)reader.ReadUInt16();
-            int nameIndex = reader.ReadUInt16() - 1;
-            int descriptorIndex = reader.ReadUInt16() - 1;
+            string name = GetConstantPoolItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).Value;
+            string descriptor = GetConstantPoolItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).Value;
 
             //TODO: Load Attributes
 
-            return new FieldInfo(flag, nameIndex, descriptorIndex);
+            return new FieldInfo(flag, name, descriptor);
         }
 
-        private int[] LoadInterfaces(BigEndianBinaryReader reader)
+        private ClassConstantPoolItem[] LoadInterfaces(BigEndianBinaryReader reader)
         {
             int interfacesLength = reader.ReadUInt16();
-            int[] interfaces = new int[interfacesLength];
+            var interfaces = new ClassConstantPoolItem[interfacesLength];
 
             for (int i = 0; i < interfacesLength; i++)
             {
-                interfaces[i] = reader.ReadUInt16() - 1;
+                interfaces[i] = GetConstantPoolItem<ClassConstantPoolItem>(reader.ReadUInt16());
             }
 
             return interfaces;
         }
 
-        private ConstantPoolItem[] LoadConstantPool(BigEndianBinaryReader reader)
+        private ConstantPoolItemBase[] LoadConstantPool(BigEndianBinaryReader reader)
         {
-            int constantPoolLength = reader.ReadUInt16() - 1; //constant_pool_count item is equal to the number of entries in the  constant_pool table plus one.
-            ConstantPoolItem[] constantPool = new ConstantPoolItem[constantPoolLength];
+            int constantPoolLength = reader.ReadUInt16(); //constant_pool_count item is equal to the number of entries in the  constant_pool table plus one.
+            ConstantPoolItemBase[] constantPool = new ConstantPoolItemBase[constantPoolLength];
             bool wasTwoConstantPoolEntries;
-            for (int i = 0; i < constantPoolLength; i++)
+            for (int i = 1; i < constantPoolLength; i++)
             {
                 constantPool[i] = LoadConstantPoolItem(reader, out wasTwoConstantPoolEntries);
                 if (wasTwoConstantPoolEntries)
@@ -95,10 +141,23 @@ namespace JVMdotNET.Core.ClassFile.Loader
                     i++;
                 }
             }
+            
+            //Resolve items in constant pool
+            for (int i = 0; i < constantPoolLength; i++)
+            {
+                var item = constantPool[i];
+                if (item != null)
+                {
+                    item.Resolve(constantPool, i);
+                }
+            }
+
+            
+
             return constantPool;
         }
 
-        private ConstantPoolItem LoadConstantPoolItem(BigEndianBinaryReader reader, out bool wasTwoConstantPoolEntries)
+        private ConstantPoolItemBase LoadConstantPoolItem(BigEndianBinaryReader reader, out bool wasTwoConstantPoolEntries)
         {
             ConstantPoolItemType tag = (ConstantPoolItemType)reader.ReadByte();
             wasTwoConstantPoolEntries = false;
