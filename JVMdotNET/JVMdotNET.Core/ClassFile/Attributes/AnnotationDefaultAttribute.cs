@@ -7,5 +7,6 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class AnnotationDefaultAttribute : AttributeBase
     {
+        internal const string Name = "AnnotationDefault";
     }
 }

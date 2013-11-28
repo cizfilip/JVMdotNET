@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace JVMdotNET.Core.ClassFile
 {
     [Flags]
-    enum MethodAccessFlag : ushort
+    enum MethodAccessFlags : ushort
     {
         Public = 0x0001, // Declared public; may be accessed from outside its package.
         Private = 0x0002, // Declared private; accessible only within the defining class.

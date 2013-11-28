@@ -19,12 +19,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
         protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
         {
-            var name = constantPool[nameIndex] as Utf8ConstantPoolItem;
-            if (name == null)
-            {
-                ThrowInvalidConstantPoolIndex();
-            }
-            this.Name = name.Value;
+            this.Name = constantPool.GetItem<Utf8ConstantPoolItem>(nameIndex).String;
         }
 
         public override ConstantPoolItemType Type

@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class EnclosingMethodAttribute : AttributeBase
     {
+        internal const string Name = "EnclosingMethod";
+
     }
 }

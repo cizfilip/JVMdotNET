@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class BootstrapMethodsAttribute : AttributeBase
     {
+        internal const string Name = "BootstrapMethods";
+
     }
 }

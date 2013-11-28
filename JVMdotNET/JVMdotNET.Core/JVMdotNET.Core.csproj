@@ -48,6 +48,7 @@
     <Compile Include="ClassFile\Attributes\DeprecatedAttribute.cs" />
     <Compile Include="ClassFile\Attributes\EnclosingMethodAttribute.cs" />
     <Compile Include="ClassFile\Attributes\ExceptionsAttribute.cs" />
+    <Compile Include="ClassFile\Attributes\ExceptionTable\ExceptionTableEntry.cs" />
     <Compile Include="ClassFile\Attributes\InnerClassesAttribute.cs" />
     <Compile Include="ClassFile\Attributes\LineNumberTableAttribute.cs" />
     <Compile Include="ClassFile\Attributes\LocalVariableTableAttribute.cs" />
@@ -61,7 +62,7 @@
     <Compile Include="ClassFile\Attributes\SourceFileAttribute.cs" />
     <Compile Include="ClassFile\Attributes\StackMapTableAttribute.cs" />
     <Compile Include="ClassFile\Attributes\SyntheticAttribute.cs" />
-    <Compile Include="ClassFile\ClassAccessFlag.cs" />
+    <Compile Include="ClassFile\ClassAccessFlags.cs" />
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemType.cs" />
     <Compile Include="ClassFile\ConstantPool\ClassConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\DoubleConstantPoolItem.cs" />
@@ -79,9 +80,15 @@
     <Compile Include="ClassFile\ConstantPool\StringConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\Utf8ConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\ValueConstantPoolItem.cs" />
-    <Compile Include="ClassFile\FieldAccessFlag.cs" />
+    <Compile Include="ClassFile\ConstantPool\ValueConstantPoolItem`.cs" />
+    <Compile Include="ClassFile\FieldAccessFlags.cs" />
     <Compile Include="ClassFile\FieldInfo.cs" />
-    <Compile Include="ClassFile\MethodAccessFlag.cs" />
+    <Compile Include="ClassFile\IAttributteContainer.cs" />
+    <Compile Include="ClassFile\Loader\AttributeLoader.cs" />
+    <Compile Include="ClassFile\Loader\ConstantPoolLoader.cs" />
+    <Compile Include="ClassFile\MethodAccessFlags.cs" />
+    <Compile Include="ClassFile\MethodInfo.cs" />
+    <Compile Include="ClassFile\Signature.cs" />
     <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
     <Compile Include="ClassFile\ClassFile.cs" />
     <Compile Include="ClassFile\Loader\ClassFileLoader.cs" />
@@ -90,7 +97,9 @@
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Bytecode\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

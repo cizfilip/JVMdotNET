@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class LocalVariableTableAttribute : AttributeBase
     {
+        internal const string Name = "LocalVariableTable";
+
     }
 }

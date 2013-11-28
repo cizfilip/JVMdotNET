@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace JVMdotNET.Core.ClassFile
 {
     [Flags]
-    internal enum ClassAccessFlag : ushort
+    internal enum ClassAccessFlags : ushort
     {
         Public = 0x0001, // Declared public; may be accessed from outside its package.
         Final = 0x0010, // Declared final; no subclasses allowed.

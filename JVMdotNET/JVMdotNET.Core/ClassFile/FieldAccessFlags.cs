@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace JVMdotNET.Core.ClassFile
 {
     [Flags]
-    internal enum FieldAccessFlag : ushort
+    internal enum FieldAccessFlags : ushort
     {
         Public = 0x0001, //Declared public; may be accessed from outside its package.
         Private = 0x0002, //Declared private; usable only within the defining class.

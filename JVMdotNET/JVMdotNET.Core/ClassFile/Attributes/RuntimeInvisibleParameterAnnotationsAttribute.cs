@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class RuntimeInvisibleParameterAnnotationsAttribute : AttributeBase
     {
+        internal const string Name = "RuntimeInvisibleParameterAnnotations";
+
     }
 }

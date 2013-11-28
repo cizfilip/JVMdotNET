@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    internal class ClassFile
+    internal class ClassFile : IAttributteContainer
     {
         private ConstantPoolItemBase[] constantPool;
 
@@ -16,5 +16,15 @@ namespace JVMdotNET.Core.ClassFile
             this.constantPool = constantPool;
         }
 
+
+        public string[] ValidAttributes
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public T GetAttribute<T>(string attributeName) where T : Attributes.AttributeBase
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class InnerClassesAttribute : AttributeBase
     {
+        internal const string Name = "InnerClasses";
+
     }
 }

@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class SourceDebugExtensionAttribute : AttributeBase
     {
+        internal const string Name = "SourceDebugExtension";
+
     }
 }

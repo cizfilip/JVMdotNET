@@ -7,11 +7,17 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal abstract class AttributeBase
     {
-        //public string Name { get; private set; }
+        
+        //protected bool isResolved = false;
 
-        //public AttributeBase(string name)
+        //public void Resolve()
         //{
-        //    this.Name = name;
+        //    if (!isResolved)
+        //    {
+        //        ResolveInternal();
+        //    }
         //}
+
+        //protected abstract void ResolveInternal();
     }
 }

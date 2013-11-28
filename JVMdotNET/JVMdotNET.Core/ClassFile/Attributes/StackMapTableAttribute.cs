@@ -7,5 +7,6 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class StackMapTableAttribute : AttributeBase
     {
+        internal const string Name = "StackMapTable";
     }
 }

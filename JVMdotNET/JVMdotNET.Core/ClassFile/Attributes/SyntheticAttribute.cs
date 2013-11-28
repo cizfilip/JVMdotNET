@@ -7,5 +7,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 {
     internal class SyntheticAttribute : AttributeBase
     {
+        internal const string Name = "Synthetic";
+
     }
 }

@@ -22,13 +22,9 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
         protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
         {
-            var @class = constantPool[classIndex] as ClassConstantPoolItem;
-            var nameAndType = constantPool[nameAndTypeIndex] as NameAndTypeConstantPoolItem;
-
-            if (@class == null || nameAndType == null)
-            {
-                ThrowInvalidConstantPoolIndex();
-            }
+            this.Class = constantPool.GetItem<ClassConstantPoolItem>(classIndex);
+            
+            this.NameAndType = constantPool[nameAndTypeIndex] as NameAndTypeConstantPoolItem;
         }
     }
 }
