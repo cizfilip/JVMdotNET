@@ -8,7 +8,9 @@ namespace JVMdotNET.Core.ClassFile
 {
     internal interface IAttributteContainer
     {
+
         string[] ValidAttributes { get; }
+        IDictionary<string, AttributeBase> Attributes { get; }
         T GetAttribute<T>(string attributeName) where T : AttributeBase;
     }
 }

@@ -1,5 +1,4 @@
-﻿using JVMdotNET.Core.ClassFile.Attributes.ExceptionTable;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +16,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 
         internal const string Name = "Code";
 
-        private IDictionary<string, AttributeBase> attributes;
+        public IDictionary<string, AttributeBase> Attributes { get; private set; }
 
         public int MaxStack { get; private set; }
         public int MaxLocals { get; private set; }
@@ -33,7 +32,7 @@ namespace JVMdotNET.Core.ClassFile.Attributes
             this.MaxLocals = maxLocals;
             this.Code = code;
             this.ExceptionTable = exceptionTable;
-            this.attributes = attributes;
+            this.Attributes = attributes;
         }
 
 
@@ -44,7 +43,24 @@ namespace JVMdotNET.Core.ClassFile.Attributes
 
         public T GetAttribute<T>(string attributeName) where T : AttributeBase
         {
-            return attributes[attributeName] as T;
+            throw new NotImplementedException();
+        }
+    }
+
+
+    internal class ExceptionTableEntry
+    {
+        public int StartPC { get; private set; }
+        public int EndPC { get; private set; }
+        public int HandlerPC { get; private set; }
+        public int CatchTypeIndex { get; private set; }
+
+        public ExceptionTableEntry(int startPC, int endPC, int handlerPC, int catchTypeIndex)
+        {
+            this.StartPC = startPC;
+            this.EndPC = endPC;
+            this.HandlerPC = handlerPC;
+            this.CatchTypeIndex = catchTypeIndex;
         }
     }
 }

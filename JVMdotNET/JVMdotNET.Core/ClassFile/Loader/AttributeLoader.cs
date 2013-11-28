@@ -1,5 +1,4 @@
 ﻿using JVMdotNET.Core.ClassFile.Attributes;
-using JVMdotNET.Core.ClassFile.Attributes.ExceptionTable;
 using JVMdotNET.Core.ClassFile.ConstantPool;
 using JVMdotNET.Core.ClassFile.Utils;
 using JVMdotNET.Core.Exceptions;
@@ -46,58 +45,31 @@ namespace JVMdotNET.Core.ClassFile.Loader
                     return LoadConstantValue(reader, attributeLength);
                 case CodeAttribute.Name:
                     return LoadCode(reader, attributeLength);
-                case StackMapTableAttribute.Name:
-
-                    break;
                 case ExceptionsAttribute.Name:
-
-                    break;
+                    return LoadExceptions(reader, attributeLength);
                 case InnerClassesAttribute.Name:
-
-                    break;
-                case EnclosingMethodAttribute.Name:
-
-                    break;
+                    return LoadInnerClasses(reader, attributeLength);
                 case SyntheticAttribute.Name:
                     return LoadSynthetic(reader, attributeLength);
                 case SignatureAttribute.Name:
                     return LoadSignature(reader, attributeLength);
                 case SourceFileAttribute.Name:
                     return LoadSourceFile(reader, attributeLength);
-                case SourceDebugExtensionAttribute.Name:
-                    //TODO: Implement attribute
-                    SkipAttribute(reader, attributeLength);
-                    break;
-                case LineNumberTableAttribute.Name:
-
-                    break;
-                case LocalVariableTableAttribute.Name:
-
-                    break;
-                case LocalVariableTypeTableAttribute.Name:
-
-                    break;
                 case DeprecatedAttribute.Name:
                     return LoadDeprecated(reader, attributeLength);
-                case RuntimeVisibleAnnotationsAttribute.Name:
 
-                    break;
-                case RuntimeInvisibleAnnotationsAttribute.Name:
-
-                    break;
-                case RuntimeVisibleParameterAnnotationsAttribute.Name:
-
-                    break;
-                case RuntimeInvisibleParameterAnnotationsAttribute.Name:
-
-                    break;
-                case AnnotationDefaultAttribute.Name:
-
-                    break;
-                case BootstrapMethodsAttribute.Name:
-
-                    break;
-
+                case EnclosingMethodAttribute.Name: //Implement this attribute when needed....
+                case LineNumberTableAttribute.Name: //Debuging not supported yet...
+                case LocalVariableTableAttribute.Name: //Debuging not supported yet...
+                case LocalVariableTypeTableAttribute.Name: //Debuging not supported yet...
+                case SourceDebugExtensionAttribute.Name: //Debuging extensions not supported...
+                case StackMapTableAttribute.Name: //Ignoring this attribute - needed for verification by type checking (see JVM spec 4.10.1) but this JVM does not verify class files...
+                case RuntimeVisibleAnnotationsAttribute.Name: //Java annotations not supported...
+                case RuntimeInvisibleAnnotationsAttribute.Name: //Java annotations not supported...
+                case RuntimeVisibleParameterAnnotationsAttribute.Name: //Java annotations not supported...
+                case RuntimeInvisibleParameterAnnotationsAttribute.Name: //Java annotations not supported...
+                case AnnotationDefaultAttribute.Name: //Java annotations not supported...
+                case BootstrapMethodsAttribute.Name: //Not supported - needed only for invokedynamic...
                 default:
                     //TODO: silent ignore (but log)
                     //skip length of the attribute
@@ -107,8 +79,6 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             return null;
         }
-
-        
 
         private void SkipAttribute(BigEndianBinaryReader reader, int attributeLength)
         {
@@ -160,6 +130,56 @@ namespace JVMdotNET.Core.ClassFile.Loader
             return new CodeAttribute(maxStack, maxLocals, code, exceptionTable, attributes);
         }
 
+        private AttributeBase LoadExceptions(BigEndianBinaryReader reader, int attributeLength)
+        {
+            int numberOfExceptions = reader.ReadUInt16();
+
+            var exceptionClasses = new string[numberOfExceptions];
+
+            for (int i = 0; i < numberOfExceptions; i++)
+            {
+                int classIndex = reader.ReadUInt16();
+                exceptionClasses[i] = constantPool.GetItem<ClassConstantPoolItem>(classIndex).Name;
+            }
+
+            return new ExceptionsAttribute(exceptionClasses);
+        }
+
+        private AttributeBase LoadInnerClasses(BigEndianBinaryReader reader, int attributeLength)
+        {
+            int numberOfClasses = reader.ReadUInt16();
+            //TODO: Validace delky attributu vsude i u promennych delek
+            //if (this.MajorVersion >= 49 && attribute_length != 2 + count * (2 + 2 + 2 + 2))
+            //{
+            //    throw new ClassFormatError("{0} (InnerClasses attribute has incorrect length)", this.Name);
+            //}
+
+            var innerClasses = new InnerClass[numberOfClasses];
+            for (int i = 0; i < numberOfClasses; i++)
+            {
+                string innerClassName = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16()).Name;
+                string outerClassName = null;
+                int outerClassIndex = reader.ReadUInt16();
+                if (outerClassIndex > 0)
+                {
+                    outerClassName = constantPool.GetItem<ClassConstantPoolItem>(outerClassIndex).Name;
+                }
+                string name = null;
+                int nameIndex = reader.ReadUInt16();
+                if (nameIndex > 0)
+                {
+                    name = constantPool.GetItem<Utf8ConstantPoolItem>(nameIndex).String;
+                }
+
+                InnerClassAccessFlags flags = (InnerClassAccessFlags)reader.ReadUInt16();
+
+                innerClasses[i] = new InnerClass(innerClassName, outerClassName, name, flags);
+            }
+
+            return new InnerClassesAttribute(innerClasses);
+        }
+
+       
         private AttributeBase LoadSourceFile(BigEndianBinaryReader reader, int attributeLength)
         {
             ValidateLength(attributeLength, 2);

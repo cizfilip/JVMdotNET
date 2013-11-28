@@ -48,7 +48,6 @@
     <Compile Include="ClassFile\Attributes\DeprecatedAttribute.cs" />
     <Compile Include="ClassFile\Attributes\EnclosingMethodAttribute.cs" />
     <Compile Include="ClassFile\Attributes\ExceptionsAttribute.cs" />
-    <Compile Include="ClassFile\Attributes\ExceptionTable\ExceptionTableEntry.cs" />
     <Compile Include="ClassFile\Attributes\InnerClassesAttribute.cs" />
     <Compile Include="ClassFile\Attributes\LineNumberTableAttribute.cs" />
     <Compile Include="ClassFile\Attributes\LocalVariableTableAttribute.cs" />
@@ -63,6 +62,7 @@
     <Compile Include="ClassFile\Attributes\StackMapTableAttribute.cs" />
     <Compile Include="ClassFile\Attributes\SyntheticAttribute.cs" />
     <Compile Include="ClassFile\ClassAccessFlags.cs" />
+    <Compile Include="ClassFile\ClassItemInfo.cs" />
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemType.cs" />
     <Compile Include="ClassFile\ConstantPool\ClassConstantPoolItem.cs" />
     <Compile Include="ClassFile\ConstantPool\DoubleConstantPoolItem.cs" />
@@ -84,6 +84,7 @@
     <Compile Include="ClassFile\FieldAccessFlags.cs" />
     <Compile Include="ClassFile\FieldInfo.cs" />
     <Compile Include="ClassFile\IAttributteContainer.cs" />
+    <Compile Include="ClassFile\InnerClassAccessFlags.cs" />
     <Compile Include="ClassFile\Loader\AttributeLoader.cs" />
     <Compile Include="ClassFile\Loader\ConstantPoolLoader.cs" />
     <Compile Include="ClassFile\MethodAccessFlags.cs" />

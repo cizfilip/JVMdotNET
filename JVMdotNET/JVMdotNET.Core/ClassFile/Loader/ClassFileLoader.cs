@@ -42,13 +42,13 @@ namespace JVMdotNET.Core.ClassFile.Loader
             this.attributeLoader = new AttributeLoader(constantPool);
 
             //Class access flags
-            var accessFlag = (ClassAccessFlags)reader.ReadUInt16();
+            var accessFlags = (ClassAccessFlags)reader.ReadUInt16();
 
             //this class
-            ClassConstantPoolItem thisClass = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16());
+            string thisClass = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16()).Name;
 
             //super class
-            ClassConstantPoolItem superClass = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16());
+            string superClass = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16()).Name;
             //TODO: validation
             //if (IsInterface && (super_class == 0 || this.SuperClass != "java.lang.Object"))
             //{
@@ -56,21 +56,20 @@ namespace JVMdotNET.Core.ClassFile.Loader
             //}
 
             //interfaces
-            ClassConstantPoolItem[] interfaces = LoadInterfaces(reader);
+            string[] interfaces = LoadInterfaces(reader);
 
 
             //fields
             FieldInfo[] fields = LoadFields(reader);
 
+            //methods
+            MethodInfo[] methods = LoadMethods(reader);
+
+            IDictionary<string, AttributeBase> attributes = attributeLoader.Load(reader);
+            
 
 
-            //TODO: Checkovat zda-li plati pri nacitani metody init nasledujici:
-            //In a  class file whose version number is 51.0 or above, the method must
-            //additionally have its  ACC_STATIC flag (§4.6) set in order to be the class or interface
-            //initialization method.
-
-
-            //Remove utf8 items (not needed after all is loaded and resolved)
+            //Remove utf8 items (not needed after all is loaded and resolved) or maybe needed :)
             //for (int i = 0; i < constantPool.Length; i++)
             //{
             //    var item = constantPool[i];
@@ -80,7 +79,36 @@ namespace JVMdotNET.Core.ClassFile.Loader
             //    }
             //}
 
-            return null;
+            return new ClassFile(versionInfo, constantPool, accessFlags, thisClass, superClass, interfaces, fields, methods, attributes);
+        }
+
+        private MethodInfo[] LoadMethods(BigEndianBinaryReader reader)
+        {
+            int methodsLength = reader.ReadUInt16();
+            MethodInfo[] methods = new MethodInfo[methodsLength];
+
+            for (int i = 0; i < methodsLength; i++)
+            {
+                methods[i] = LoadMethodInfo(reader);
+            }
+
+            return methods;
+        }
+
+        private MethodInfo LoadMethodInfo(BigEndianBinaryReader reader)
+        {
+            //TODO: Checkovat zda-li plati pri nacitani metody init nasledujici:
+            //In a  class file whose version number is 51.0 or above, the method must
+            //additionally have its  ACC_STATIC flag (§4.6) set in order to be the class or interface
+            //initialization method.
+
+            MethodAccessFlags flags = (MethodAccessFlags)reader.ReadUInt16();
+            string name = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
+            string descriptor = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
+
+            var attributes = attributeLoader.Load(reader);
+
+            return new MethodInfo(flags, name, descriptor, attributes);
         }
 
         private FieldInfo[] LoadFields(BigEndianBinaryReader reader)
@@ -98,23 +126,23 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
         private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader)
         {
-            FieldAccessFlags flag = (FieldAccessFlags)reader.ReadUInt16();
+            FieldAccessFlags flags = (FieldAccessFlags)reader.ReadUInt16();
             string name = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
             string descriptor = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
 
             var attributes = attributeLoader.Load(reader);
 
-            return new FieldInfo(flag, name, descriptor, attributes);
+            return new FieldInfo(flags, name, descriptor, attributes);
         }
 
-        private ClassConstantPoolItem[] LoadInterfaces(BigEndianBinaryReader reader)
+        private string[] LoadInterfaces(BigEndianBinaryReader reader)
         {
             int interfacesLength = reader.ReadUInt16();
-            var interfaces = new ClassConstantPoolItem[interfacesLength];
+            var interfaces = new string[interfacesLength];
 
             for (int i = 0; i < interfacesLength; i++)
             {
-                interfaces[i] = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16());
+                interfaces[i] = constantPool.GetItem<ClassConstantPoolItem>(reader.ReadUInt16()).Name;
             }
 
             return interfaces;

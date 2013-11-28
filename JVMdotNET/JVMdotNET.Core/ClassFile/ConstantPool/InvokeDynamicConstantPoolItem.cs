@@ -13,15 +13,14 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
         public InvokeDynamicConstantPoolItem(int bootstrapMethodIndex, int nameAndTypeIndex)
         {
-            throw new NotImplementedException();
-
-            //this.bootstrapMethodIndex = bootstrapMethodIndex;
-            //this.nameAndTypeIndex = nameAndTypeIndex;
+            this.bootstrapMethodIndex = bootstrapMethodIndex;
+            this.nameAndTypeIndex = nameAndTypeIndex;
         }
 
         protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
         {
-            throw new NotImplementedException();
+            //noop
+            //not implemented because Java compiler language
         }
 
         public override ConstantPoolItemType Type

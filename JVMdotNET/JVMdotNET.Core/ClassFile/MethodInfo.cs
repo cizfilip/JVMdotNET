@@ -6,7 +6,7 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    internal class MethodInfo : IAttributteContainer
+    internal class MethodInfo : ClassItemInfo
     {
         private static readonly string[] ValidAttributeNames = { 
                                                                    CodeAttribute.Name,
@@ -21,14 +21,20 @@ namespace JVMdotNET.Core.ClassFile
 
                                                                };
 
-        public string[] ValidAttributes
+        public MethodAccessFlags AccessFlags { get; private set; }
+
+        public MethodInfo(MethodAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
+            : base(name, descriptor, attributes)
+        {
+            this.AccessFlags = accessFlags;
+        }
+        
+
+        public override string[] ValidAttributes
         {
             get { return ValidAttributeNames; }
         }
 
-        public T GetAttribute<T>(string attributeName) where T : Attributes.AttributeBase
-        {
-            throw new NotImplementedException();
-        }
+
     }
 }

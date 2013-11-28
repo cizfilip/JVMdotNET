@@ -9,6 +9,8 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
     {
         private int descriptorIndex;
 
+        public string MethodDescriptor { get; private set; }
+
         public MethodTypeConstantPoolItem(int descriptorIndex)
         {
             this.descriptorIndex = descriptorIndex;
@@ -16,8 +18,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
         protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
         {
-            //TODO: implement this
-            throw new NotImplementedException();
+            this.MethodDescriptor = constantPool.GetItem<Utf8ConstantPoolItem>(descriptorIndex).String;
         }
 
         public override ConstantPoolItemType Type
