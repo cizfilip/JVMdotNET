@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    internal class ClassFile : IAttributteContainer
+    internal class JavaClass : IAttributteContainer
     {
         private static readonly string[] ValidAttributeNames = { 
                                                                    InnerClassesAttribute.Name,
@@ -33,7 +33,7 @@ namespace JVMdotNET.Core.ClassFile
         public MethodInfo[] Methods { get; private set; }
         public IDictionary<string, AttributeBase> Attributes { get; private set; }
 
-        public ClassFile(VersionInfo version, ConstantPoolItemBase[] constantPool, 
+        public JavaClass(VersionInfo version, ConstantPoolItemBase[] constantPool, 
             ClassAccessFlags accessFlags, string name, string super,
             string[] interfaces, FieldInfo[] fields, MethodInfo[] methods,
             IDictionary<string, AttributeBase> attributes)

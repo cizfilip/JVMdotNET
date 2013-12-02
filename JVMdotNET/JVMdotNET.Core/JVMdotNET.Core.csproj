@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bytecode\ByteCodeInterpreter.cs" />
+    <Compile Include="Bytecode\Instruction.cs" />
     <Compile Include="ClassFile\Attributes\AnnotationDefaultAttribute.cs" />
     <Compile Include="ClassFile\Attributes\AttributeBase.cs" />
     <Compile Include="ClassFile\Attributes\BootstrapMethodsAttribute.cs" />
@@ -91,16 +93,19 @@
     <Compile Include="ClassFile\MethodInfo.cs" />
     <Compile Include="ClassFile\Signature.cs" />
     <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
-    <Compile Include="ClassFile\ClassFile.cs" />
+    <Compile Include="ClassFile\JavaClass.cs" />
     <Compile Include="ClassFile\Loader\ClassFileLoader.cs" />
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemBase.cs" />
     <Compile Include="ClassFile\VersionInfo.cs" />
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
+    <Compile Include="JavaInstance.cs" />
+    <Compile Include="JavaVirtualMachine.cs" />
+    <Compile Include="NullInstance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RuntimeEnvironment.cs" />
+    <Compile Include="StackFrame.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Bytecode\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

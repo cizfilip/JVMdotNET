@@ -35,6 +35,13 @@ namespace JVMdotNET.Core.ClassFile
             get { return ValidAttributeNames; }
         }
 
+        public CodeAttribute Code
+        {
+            get
+            {
+                return GetAttribute<CodeAttribute>(CodeAttribute.Name);
+            }
+        }
 
     }
 }

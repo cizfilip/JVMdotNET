@@ -14,14 +14,14 @@ namespace JVMdotNET.Core.ClassFile.Loader
     //TODO: Stop metoda na threadu vyvolava asynchroni exception nejak resit az budu delat thready viz specifikace- kap. 2.10.
     internal class ClassFileLoader
     {
-        private ClassFile classFile;
+        private JavaClass classFile;
 
         private ConstantPoolItemBase[] constantPool;
 
         private ConstantPoolLoader constantPoolLoader;
         private AttributeLoader attributeLoader;
 
-        public ClassFile Load(Stream input)
+        public JavaClass Load(Stream input)
         {
             this.constantPoolLoader = new ConstantPoolLoader();
             
@@ -79,7 +79,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
             //    }
             //}
 
-            return new ClassFile(versionInfo, constantPool, accessFlags, thisClass, superClass, interfaces, fields, methods, attributes);
+            return new JavaClass(versionInfo, constantPool, accessFlags, thisClass, superClass, interfaces, fields, methods, attributes);
         }
 
         private MethodInfo[] LoadMethods(BigEndianBinaryReader reader)
