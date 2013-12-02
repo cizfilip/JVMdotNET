@@ -44,7 +44,11 @@ namespace JVMdotNET.Core
             CodeAttribute codeInfo = method.Code;
             byte[] code = codeInfo.Code;
             int codeLength = code.Length;
+
+            //helper variables
             int index = 0;
+            object[] array= null;
+            object value = null;
 
             while (pc < codeLength)
             {
@@ -55,7 +59,7 @@ namespace JVMdotNET.Core
                     case Instruction.nop:
                         break;
                     case Instruction.aconst_null:
-                        operandStack.Push(NullInstance.Value);
+                        operandStack.Push(null);
                         break;
                     case Instruction.iconst_m1:
                         operandStack.Push((int)-1);
@@ -151,25 +155,29 @@ namespace JVMdotNET.Core
                     case Instruction.aload_3:
                         operandStack.Push(locals[3]);
                         break;
-                    case Instruction.iaload: //array loads must throws NullReferenceExp or IndexOutOfRangeExp... how????
-                        break;
+                    case Instruction.iaload:
                     case Instruction.laload:
-                        break;
                     case Instruction.faload:
-                        break;
                     case Instruction.daload:
-                        break;
                     case Instruction.aaload:
-                        break;
                     case Instruction.baload:
-                        break;
                     case Instruction.caload:
-                        break;
                     case Instruction.saload:
+                        index = (int)operandStack.Pop();
+                        array = (object[])operandStack.Pop();
+                        if (array == null)
+                        {
+                            //TODO: throw NullPointerException
+                        }
+                        if (index < 0 || index >= array.Length)
+                        {
+                            //TODO: throw ArrayIndexOutOfBoundsException
+                        }
+                        operandStack.Push(array[index]);
                         break;
 
 
-                    case Instruction.istore: //wide check
+                    case Instruction.istore:
                     case Instruction.lstore:
                     case Instruction.fstore:
                     case Instruction.dstore:
@@ -210,55 +218,85 @@ namespace JVMdotNET.Core
                     
 
                     case Instruction.iastore:
-                        break;
                     case Instruction.lastore:
-                        break;
                     case Instruction.fastore:
-                        break;
                     case Instruction.dastore:
-                        break;
                     case Instruction.aastore:
-                        break;
                     case Instruction.bastore:
-                        break;
                     case Instruction.castore:
-                        break;
                     case Instruction.sastore:
+                        value = operandStack.Pop();
+                        index = (int)operandStack.Pop();
+                        array = (object[])operandStack.Pop();
+                        if (array == null)
+                        {
+                            //TODO: throw NullPointerException
+                        }
+                        if (index < 0 || index >= array.Length)
+                        {
+                            //TODO: throw ArrayIndexOutOfBoundsException
+                        }
+                        array[index] = value;
                         break;
+
+
                     case Instruction.pop:
+                        operandStack.Pop();
                         break;
-                    case Instruction.pop2:
+                    case Instruction.pop2: // JVM stings.....
+                        value = operandStack.Pop();
+                        if (!value.IsCategory2Type())
+                        {
+                            operandStack.Pop();
+                        }
                         break;
                     case Instruction.dup:
+                        Dup();
                         break;
                     case Instruction.dup_x1:
+                        DupX1();
                         break;
                     case Instruction.dup_x2:
+                        DupX2();
                         break;
                     case Instruction.dup2:
+                        Dup2();
                         break;
                     case Instruction.dup2_x1:
+                        Dup2X1();
                         break;
                     case Instruction.dup2_x2:
+                        Dup2X2();
                         break;
                     case Instruction.swap:
+                        value = operandStack.Pop();
+                        operandStack.PushMany(value, operandStack.Pop());
                         break;
                     case Instruction.iadd:
+                        operandStack.Push((int)operandStack.Pop() + (int)operandStack.Pop());
                         break;
                     case Instruction.ladd:
+                        operandStack.Push((long)operandStack.Pop() + (long)operandStack.Pop());
                         break;
                     case Instruction.fadd:
+                        operandStack.Push((float)operandStack.Pop() + (float)operandStack.Pop());
                         break;
                     case Instruction.dadd:
+                        operandStack.Push((double)operandStack.Pop() + (double)operandStack.Pop());
                         break;
                     case Instruction.isub:
+                        operandStack.Push(-(int)operandStack.Pop() + (int)operandStack.Pop());
                         break;
                     case Instruction.lsub:
+                        operandStack.Push(-(long)operandStack.Pop() + (long)operandStack.Pop());
                         break;
                     case Instruction.fsub:
+                        operandStack.Push(-(float)operandStack.Pop() + (float)operandStack.Pop());
                         break;
                     case Instruction.dsub:
+                        operandStack.Push(-(double)operandStack.Pop() + (double)operandStack.Pop());
                         break;
+
                     case Instruction.imul:
                         break;
                     case Instruction.lmul:
@@ -468,6 +506,101 @@ namespace JVMdotNET.Core
             }
         }
 
+        //TODO: check again if DUP implementations are correct...
+        #region Dup instructions
+        
+        private void Dup()
+        {
+            object value = operandStack.Peek();
+            operandStack.Push(value);
+        }
+
+        private void DupX1()
+        {
+            object value1 = operandStack.Pop();
+            object value2 = operandStack.Pop();
+            operandStack.PushMany(value1, value2, value1);
+        }
+
+        private void DupX2()
+        {
+            object value1 = operandStack.Pop();
+            object value2 = operandStack.Pop();
+
+            if (value2.IsCategory2Type())
+            {
+                operandStack.PushMany(value1, value2, value1);
+            }
+            else
+            {
+                object value3 = operandStack.Pop();
+                operandStack.PushMany(value1, value3, value2, value1);
+            }
+        }
+
+        private void Dup2()
+        {
+            object value1 = operandStack.Pop();
+            if (value1.IsCategory2Type())
+            {
+                operandStack.PushMany(value1, value1);
+            }
+            else
+            {
+                object value2 = operandStack.Pop();
+                operandStack.PushMany(value2, value1, value2, value1);
+            }
+        }
+
+        private void Dup2X1()
+        {
+            object value1 = operandStack.Pop();
+            object value2 = operandStack.Pop();
+            if (value1.IsCategory2Type())
+            {
+                operandStack.PushMany(value1, value2, value1);
+            }
+            else
+            {
+                object value3 = operandStack.Pop();
+                operandStack.PushMany(value2, value1, value3, value2, value1);
+            }
+        }
+
+        //JVM category 2 types (long, double) hell.... (see JVM specification page 417)
+        private void Dup2X2()
+        {
+            object value1 = operandStack.Pop();
+            object value2 = operandStack.Pop();
+
+            if (value1.IsCategory2Type() && value2.IsCategory2Type()) 
+            {// FORM 4
+                operandStack.PushMany(value1, value2, value1);
+            }
+            else
+            {
+                object value3 = operandStack.Pop();
+                if (value3.IsCategory2Type())
+                {//FORM #
+                    operandStack.PushMany(value2, value1, value3, value2, value1);
+                }
+                else
+                {
+                    if (value1.IsCategory2Type())
+                    {//FORM 2
+                        operandStack.PushMany(value1, value3, value2, value1);
+                    }
+                    else
+                    {//FORM 1
+                        object value4 = operandStack.Pop();
+                        operandStack.PushMany(value2, value1, value4, value3, value2, value1);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
 
     }
 
@@ -489,6 +622,22 @@ namespace JVMdotNET.Core
             short s = (short)((bytes[pc] << 8) | bytes[pc + 1]);
             pc += 2;
             return s;
+        }
+
+        public static bool IsCategory2Type(this object obj)
+        {
+            return (obj is long || obj is double);
+        }
+    }
+
+    internal static class StackExtensions
+    {
+        public static void PushMany<T>(this Stack<T> stack, params T[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                stack.Push(values[i]);
+            }
         }
     }
 }

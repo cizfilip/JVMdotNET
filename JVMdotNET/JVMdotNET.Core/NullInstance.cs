@@ -5,6 +5,7 @@ using System.Text;
 
 namespace JVMdotNET.Core
 {
+    //TODO: pouzivat ci ne???
     internal sealed class NullInstance : JavaInstance
     {
         private static NullInstance value;
