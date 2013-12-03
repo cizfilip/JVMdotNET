@@ -541,12 +541,12 @@ namespace JVMdotNET.Core
                         break;
                     case Instruction.jsr:
                         newPC = (int)code.ReadShort(ref pc);
-                        operandStack.Push(newPC);
+                        operandStack.Push(pc);
                         pc = newPC;
                         break;
                     case Instruction.jsr_w:
                         newPC = code.ReadInt(ref pc);
-                        operandStack.Push(newPC);
+                        operandStack.Push(pc);
                         pc = newPC;
                         break;
                     case Instruction.ret: 
@@ -558,6 +558,8 @@ namespace JVMdotNET.Core
                         break;
                     case Instruction.lookupswitch:
                         break;
+
+
                     case Instruction.ireturn:
                         break;
                     case Instruction.lreturn:
@@ -783,6 +785,8 @@ namespace JVMdotNET.Core
 
         #endregion
 
+        #region Jump instructions
+
         private void Jump<T>(Func<T, bool> when, int newPC)
         {
             T value = (T)operandStack.Pop();
@@ -800,6 +804,18 @@ namespace JVMdotNET.Core
             {
                 pc = newPC;
             }
+        }
+
+        #endregion
+
+        private void TableSwitch()
+        {
+
+        }
+
+        private void LookupSwitch()
+        {
+
         }
     }
 
