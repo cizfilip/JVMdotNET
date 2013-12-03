@@ -3,27 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace JVMdotNET.Core
+namespace JVMdotNET.Core.TypeSystem
 {
-    //TODO: pouzivat ci ne???
-    internal sealed class NullInstance : JavaInstance
+    internal sealed class NullReference : JavaReference
     {
-        private static NullInstance value;
+        private static NullReference value;
 
-        public static NullInstance Value
+        public static NullReference Value
         {
             get
             {
                 if(value == null)
                 {
-                    value = new NullInstance();
+                    value = new NullReference();
                 }
                 return value;
             }
         }
 
 
-        private NullInstance()
+        private NullReference()
         {
 
         }

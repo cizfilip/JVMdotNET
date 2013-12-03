@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace JVMdotNET.Core
+namespace JVMdotNET.Core.TypeSystem
 {
-    internal class JavaInstance
+    internal abstract class JavaReference
     {
-        private object[] fields;
 
     }
 }
