@@ -1,7 +1,6 @@
 ﻿using JVMdotNET.Core.Bytecode;
 using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Attributes;
-using JVMdotNET.Core.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -129,9 +128,8 @@ namespace JVMdotNET.Core
                     case Instruction.fload:
                     case Instruction.dload:
                     case Instruction.aload:
-                        index = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
+                        index = ReadWithWideCheck(code);
                         operandStack.Push(locals[index]);
-                        wasWideInstruction = false;
                         break;
                     case Instruction.iload_0:
                     case Instruction.lload_0:
@@ -188,9 +186,8 @@ namespace JVMdotNET.Core
                     case Instruction.fstore:
                     case Instruction.dstore:
                     case Instruction.astore:
-                        index = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
+                        index = ReadWithWideCheck(code);
                         locals[index] = operandStack.Pop();
-                        wasWideInstruction = false;
                         break;
 
                     case Instruction.istore_0:
@@ -339,7 +336,6 @@ namespace JVMdotNET.Core
                         dValue = operandStack.PopDouble();
                         operandStack.Push(operandStack.PopDouble() / dValue);
                         break;
-                    //TODO: rem instructions
                     case Instruction.irem:
                         iValue = operandStack.PopInt();
                         if (iValue == (int)0)
@@ -418,11 +414,10 @@ namespace JVMdotNET.Core
                     case Instruction.lxor:
                         operandStack.Push(operandStack.PopLong() ^ operandStack.PopLong());
                         break;
-                    case Instruction.iinc: 
-                        index = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
-                        iValue = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
+                    case Instruction.iinc:
+                        index = ReadWithWideCheck(code, unsetWideFlag: false);
+                        iValue = ReadWithWideCheck(code);
                         locals[index] = (int)locals[index] + iValue;
-                        wasWideInstruction = false;
                         break;
                     case Instruction.i2l:
                         operandStack.Push((long)operandStack.PopInt());
@@ -549,14 +544,15 @@ namespace JVMdotNET.Core
                         operandStack.Push(pc);
                         pc = newPC;
                         break;
-                    case Instruction.ret: 
-                        index = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
+                    case Instruction.ret:
+                        index = ReadWithWideCheck(code);
                         pc = (int)locals[index];
-                        wasWideInstruction = false;
                         break;
                     case Instruction.tableswitch:
+                        TableSwitch(code);
                         break;
                     case Instruction.lookupswitch:
+                        LookupSwitch(code);
                         break;
 
 
@@ -808,15 +804,103 @@ namespace JVMdotNET.Core
 
         #endregion
 
-        private void TableSwitch()
+        #region Switch instructions
+        
+        private void TableSwitch(byte[] code)
         {
+            int startPC = pc - 1;
 
+            SkipPadding();
+
+            int defaultCase = code.ReadInt(ref pc);
+            int lowValue = code.ReadInt(ref pc);
+            int highValue = code.ReadInt(ref pc);
+
+            int value = operandStack.PopInt();
+
+            if (value < lowValue || value > highValue)
+            {
+                pc = startPC + defaultCase;
+            }
+            else
+            {
+                //pc += (value - lowValue) << 2;
+                pc += (value - lowValue) * 4;
+                pc = startPC + code.ReadInt(ref pc);
+            }
         }
 
-        private void LookupSwitch()
+        private void LookupSwitch(byte[] code)
         {
+            int startPC = pc - 1;
 
+            SkipPadding();
+
+            int defaultCase = code.ReadInt(ref pc);
+            int nPairsLength = code.ReadInt(ref pc);
+
+            int value = operandStack.PopInt();
+            int matchOffsetPairsStart = pc;
+
+            bool foundCase = false;
+            
+            //binary search for matching switch case
+            int min = 1;
+            int max = nPairsLength;
+            int middle;
+            int currentIndex;
+            int currentValue;
+
+            while (max >= min)
+            {
+                middle = (max - min) / 2 + min;
+                currentIndex = middle * 8 + matchOffsetPairsStart;
+                currentValue = code.ReadInt(ref currentIndex);
+                if (currentValue < value)
+                {
+                    min = middle + 1;
+                }
+                else if(currentValue > value)
+                {
+                    max = middle - 1;
+                }
+                else
+                {
+                    pc = startPC + code.ReadInt(ref currentIndex);
+                    foundCase = true;
+                }
+            }
+
+            if (!foundCase)
+            {
+                pc = startPC + defaultCase;
+            }
         }
+
+        private void SkipPadding()
+        {
+            while ((pc % 4) != 0)
+            {
+                pc++;
+            }
+        }
+
+        #endregion
+
+        #region Helper methods
+
+        private int ReadWithWideCheck(byte[] code, bool unsetWideFlag = true)
+        {
+            int returnValue = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadByte(ref pc);
+
+            if (unsetWideFlag)
+            {
+                wasWideInstruction = false;
+            }
+            return returnValue;
+        }
+
+        #endregion
     }
 
 

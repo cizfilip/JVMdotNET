@@ -20,6 +20,11 @@ namespace JVMdotNET.Core.ClassFile
            {'Z', typeof(bool)},
            {'[', typeof(Array)},
         };
+
+        public static Signature Parse(string descriptor)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
