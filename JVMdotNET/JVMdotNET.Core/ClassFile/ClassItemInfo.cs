@@ -25,7 +25,15 @@ namespace JVMdotNET.Core.ClassFile
         //TODO: validace
         public T GetAttribute<T>(string attributeName) where T : AttributeBase
         {
-            throw new NotImplementedException();
+            AttributeBase attribute;
+            if (Attributes.TryGetValue(attributeName, out attribute))
+            {
+                return (T)attribute;
+            }
+            else
+            {
+                throw new InvalidOperationException(string.Format("Attribute with name {0} not found in class item {1}.", attributeName, Name));
+            }
         }
     }
 }

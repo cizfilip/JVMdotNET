@@ -19,13 +19,14 @@ namespace JVMdotNET.Core.ClassFile
                                                                };
 
         public FieldAccessFlags AccessFlags { get; private set; }
-        
+        public int Index { get; private set; }
 
 
-        public FieldInfo(FieldAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
+        public FieldInfo(FieldAccessFlags accessFlags, string name, string descriptor, int index, IDictionary<string, AttributeBase> attributes)
             : base(name, descriptor, attributes)
         {
             this.AccessFlags = accessFlags;
+            this.Index = index;
         }
 
         public override string[] ValidAttributes

@@ -1,6 +1,7 @@
 ﻿using JVMdotNET.Core.Bytecode;
 using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Attributes;
+using JVMdotNET.Core.ClassFile.ConstantPool;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,8 +36,16 @@ namespace JVMdotNET.Core
 
         public void Unload()
         {
+            //TODO: What is really needed??
+            this.locals = null;
+            this.operandStack = null;
             this.classObject = null;
             this.method = null;
+        }
+
+        public void PushToOperandStack(object value)
+        {
+            operandStack.Push(value);
         }
 
         public void Run(RuntimeEnvironment env)
@@ -50,10 +59,11 @@ namespace JVMdotNET.Core
             int newPC = 0;
             object[] array= null;
             object value = null;
-            int iValue, iValue2 = 0;
-            long lValue, lValue2 = 0;
-            float fValue, fValue2 = 0;
-            double dValue, dValue2 = 0;
+            int iValue = 0;
+            long lValue = 0;
+            float fValue = 0;
+            double dValue = 0;
+            JavaInstance instance = null;
 
             while (pc < codeLength)
             {
@@ -555,26 +565,50 @@ namespace JVMdotNET.Core
                         LookupSwitch(code);
                         break;
 
-
+                    //TODO: u returnu handlovat synchronizaci (pokud mela metoda flag synchronized) pres monitor
                     case Instruction.ireturn:
-                        break;
                     case Instruction.lreturn:
-                        break;
                     case Instruction.freturn:
-                        break;
                     case Instruction.dreturn:
-                        break;
                     case Instruction.areturn:
-                        break;
+                        env.PrepareReturn(operandStack.Pop());
+                        return;
                     case Instruction.@return:
-                        break;
+                        env.PrepareReturnVoid();
+                        return;
+
                     case Instruction.getstatic:
+                        index = code.ReadShort(ref pc);
+                        value = env.GetStaticFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index));
+                        operandStack.Push(value);
                         break;
                     case Instruction.putstatic:
+                        index = code.ReadShort(ref pc);
+                        value = operandStack.Pop();
+                        env.SetStaticFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index), value);
                         break;
                     case Instruction.getfield:
+                        instance = operandStack.PopInstance();
+                        if (instance == null)
+                        {
+                            //TODO: throw NullPointerException
+                        }
+                        index = code.ReadShort(ref pc);
+                        operandStack.Push(
+                            env.GetFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index),
+                            instance));
                         break;
                     case Instruction.putfield:
+                        value = operandStack.Pop();
+                        instance = operandStack.PopInstance();
+                        if (instance == null)
+                        {
+                            //TODO: throw NullPointerException
+                        }
+                        index = code.ReadShort(ref pc);
+                        env.SetFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index), 
+                            instance,
+                            value);
                         break;
                     case Instruction.invokevirtual:
                         break;
@@ -585,7 +619,8 @@ namespace JVMdotNET.Core
                     case Instruction.invokeinterface:
                         break;
                     case Instruction.invokedynamic:
-                        break;
+                        throw new NotImplementedException("invokedynamic instruction is not supported.");
+
                     case Instruction.@new:
                         break;
                     case Instruction.newarray:

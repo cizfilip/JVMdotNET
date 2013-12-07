@@ -11,9 +11,9 @@ namespace JVMdotNET.Core
         public object[] Fields { get; private set; }
         public JavaClass JavaClass { get; private set; }
         
-        public JavaInstance(int fieldsLength, JavaClass javaClass)
+        public JavaInstance(JavaClass javaClass)
         {
-            this.Fields = new object[fieldsLength];
+            this.Fields = new object[javaClass.Fields.Count];
             this.JavaClass = javaClass;
         }
     }

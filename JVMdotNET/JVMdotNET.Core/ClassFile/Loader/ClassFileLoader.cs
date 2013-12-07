@@ -14,8 +14,6 @@ namespace JVMdotNET.Core.ClassFile.Loader
     //TODO: Stop metoda na threadu vyvolava asynchroni exception nejak resit az budu delat thready viz specifikace- kap. 2.10.
     internal class ClassFileLoader
     {
-        private JavaClass classFile;
-
         private ConstantPoolItemBase[] constantPool;
 
         private ConstantPoolLoader constantPoolLoader;
@@ -118,13 +116,13 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             for (int i = 0; i < fieldsLength; i++)
             {
-                fields[i] = LoadFieldInfo(reader);
+                fields[i] = LoadFieldInfo(reader, i);
             }
 
             return fields;
         }
 
-        private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader)
+        private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader, int index)
         {
             FieldAccessFlags flags = (FieldAccessFlags)reader.ReadUInt16();
             string name = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
@@ -132,7 +130,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             var attributes = attributeLoader.Load(reader);
 
-            return new FieldInfo(flags, name, descriptor, attributes);
+            return new FieldInfo(flags, name, descriptor, index, attributes);
         }
 
         private string[] LoadInterfaces(BigEndianBinaryReader reader)

@@ -29,8 +29,9 @@ namespace JVMdotNET.Core.ClassFile
         public string Name { get; private set; }
         public string Super { get; private set; }
         public string[] Interfaces { get; private set; }
-        public FieldInfo[] Fields { get; private set; }
-        public MethodInfo[] Methods { get; private set; }
+        public IDictionary<string, StaticField> StaticFields { get; private set; }
+        public IDictionary<string, FieldInfo> Fields { get; private set; }
+        public IDictionary<string, MethodInfo> Methods { get; private set; }
         public IDictionary<string, AttributeBase> Attributes { get; private set; }
 
         public JavaClass(VersionInfo version, ConstantPoolItemBase[] constantPool, 
@@ -44,12 +45,57 @@ namespace JVMdotNET.Core.ClassFile
             this.Name = name;
             this.Super = super;
             this.Interfaces = interfaces;
-            this.Fields = fields;
-            this.Methods = methods;
             this.Attributes = attributes;
+
+            this.Fields = new Dictionary<string, FieldInfo>();
+            this.StaticFields = new Dictionary<string, StaticField>();
+
+            LoadFields(fields);
+            LoadMethods(methods);
+        }
+
+        private void LoadMethods(MethodInfo[] methods)
+        {
+            this.Methods = new Dictionary<string, MethodInfo>();
+            foreach (var method in methods)
+            {
+                Methods.Add(method.Name, method);
+            }
+        }
+
+        public void LoadFields(FieldInfo[] fields)
+        {
+            foreach (var field in fields)
+            {
+                if (field.AccessFlags.HasFlag(FieldAccessFlags.Static))
+                {
+                    StaticFields.Add(field.Name, new StaticField(field));
+                }
+                else
+                {
+                    Fields.Add(field.Name, field);
+                }
+            }
         }
 
 
+        public object GetStaticFieldValue(string fieldName)
+        {
+            //TODO: co kdyz field neexistuje
+            return StaticFields[fieldName].Value;
+        }
+
+        public void SetStaticFieldValue(string fieldName, object value)
+        {
+            //TODO: co kdyz field neexistuje
+            StaticFields[fieldName].Value = value;
+        }
+
+        public FieldInfo GetFieldInfo(string fieldName)
+        {
+            //TODO: co kdyz field neexistuje
+            return Fields[fieldName];
+        }
 
         public string[] ValidAttributes
         {

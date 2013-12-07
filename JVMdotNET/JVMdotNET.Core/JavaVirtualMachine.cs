@@ -9,8 +9,7 @@ namespace JVMdotNET.Core
 {
     public class JavaVirtualMachine
     {
-        private IDictionary<string, JavaClass> classes;
-        //private ByteCodeInterpreter interpreter;
+       
 
         public JavaVirtualMachine()
         {
