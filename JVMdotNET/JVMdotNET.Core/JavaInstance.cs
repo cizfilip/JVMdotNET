@@ -13,7 +13,7 @@ namespace JVMdotNET.Core
         
         public JavaInstance(JavaClass javaClass)
         {
-            this.Fields = new object[javaClass.Fields.Count];
+            this.Fields = new object[javaClass.InstanceFields.Count];
             this.JavaClass = javaClass;
         }
     }

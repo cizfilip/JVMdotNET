@@ -26,14 +26,7 @@ namespace JVMdotNET.Core
             {
                 newClass = loader.Load(reader);
             }
-
-            //TODO: java.lan.Object must be loaded first!!!!
-            string objectClassName = @"java/lang/Object";
-            if (newClass.Super != objectClassName)
-            {
-                //var parentClass = LoadClassFile()
-            }
-
+            
             AddJavaClass(newClass);
         }
 
@@ -50,8 +43,11 @@ namespace JVMdotNET.Core
             JavaClass returnClass;
             if (!classes.TryGetValue(className, out returnClass))
             {
-                //TODO: class musi mit fieldy zpropagovane ze supers
-                //TODO: try load java class or throw
+                throw new InvalidOperationException(string.Format("Java class {0} not loaded!"));
+            }
+            if (!returnClass.IsResolved)
+            {
+                returnClass.Resolve(this);
             }
             return returnClass;
         }

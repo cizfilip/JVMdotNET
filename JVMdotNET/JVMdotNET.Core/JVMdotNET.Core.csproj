@@ -98,6 +98,7 @@
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemBase.cs" />
     <Compile Include="ClassFile\VersionInfo.cs" />
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
+    <Compile Include="ClassFile\InstanceField.cs" />
     <Compile Include="JavaInstance.cs" />
     <Compile Include="JavaVirtualMachine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

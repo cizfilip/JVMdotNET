@@ -63,17 +63,22 @@ namespace JVMdotNET.Core
         public object GetFieldValue(FieldRefConstantPoolItem fieldRef, JavaInstance instance)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
-            int index = javaClass.GetFieldInfo(fieldRef.NameAndType.Name).Index;
+            int index = javaClass.GetInstanceFieldInfo(fieldRef.NameAndType.Name).Index;
             return instance.Fields[index];
         }
 
         public void SetFieldValue(FieldRefConstantPoolItem fieldRef, JavaInstance instance, object value)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
-            int index = javaClass.GetFieldInfo(fieldRef.NameAndType.Name).Index;
+            int index = javaClass.GetInstanceFieldInfo(fieldRef.NameAndType.Name).Index;
             instance.Fields[index] = value;
         }
 
+        public void EnsureClassExists(ClassConstantPoolItem classRef)
+        {
+            //TODO: používá anewarray - classa může být i inteface a arrayclass (must be a symbolic reference to a class, array, or interface type)
+            classArea.GetClass(classRef.Name);
+        }
 
         public void ExecuteProgram(JavaClass @class, MethodInfo mainMethod)
         {

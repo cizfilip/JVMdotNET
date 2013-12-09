@@ -622,10 +622,21 @@ namespace JVMdotNET.Core
                         throw new NotImplementedException("invokedynamic instruction is not supported.");
 
                     case Instruction.@new:
+                        index = code.ReadShort(ref pc);
+                        operandStack.Push(
+                            env.CreateInstance(
+                            classObject.ConstantPool.GetItem<ClassConstantPoolItem>(index).Name));
                         break;
                     case Instruction.newarray:
+                        NewArray();
+                        pc++; //skip atype
                         break;
                     case Instruction.anewarray:
+                        index = code.ReadShort(ref pc);
+                        env.EnsureClassExists(classObject.ConstantPool.GetItem<ClassConstantPoolItem>(index));
+                        NewArray();
+                        break;
+                    case Instruction.multianewarray:
                         break;
                     case Instruction.arraylength:
                         break;
@@ -641,8 +652,6 @@ namespace JVMdotNET.Core
                         break;
                     case Instruction.wide:
                         wasWideInstruction = true;
-                        break;
-                    case Instruction.multianewarray:
                         break;
                     case Instruction.breakpoint:
                     case Instruction.impdep1:
@@ -922,6 +931,20 @@ namespace JVMdotNET.Core
 
         #endregion
 
+        #region Array instructions
+
+        private void NewArray()
+        {
+            int size = operandStack.PopInt();
+            if (size < 0)
+            {
+                //TODO: throw NegativeArraySizeException 
+            }
+            operandStack.Push(new object[size]);
+        }
+
+        #endregion
+
         #region Helper methods
 
         private int ReadWithWideCheck(byte[] code, bool unsetWideFlag = true)
@@ -983,7 +1006,6 @@ namespace JVMdotNET.Core
             }
         }
 
-        //TODO: Pop method for all types that can be in operand stack
         public static int PopInt(this Stack<object> stack)
         {
             return (int)stack.Pop();

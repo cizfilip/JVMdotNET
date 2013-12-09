@@ -116,13 +116,13 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             for (int i = 0; i < fieldsLength; i++)
             {
-                fields[i] = LoadFieldInfo(reader, i);
+                fields[i] = LoadFieldInfo(reader);
             }
 
             return fields;
         }
 
-        private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader, int index)
+        private FieldInfo LoadFieldInfo(BigEndianBinaryReader reader)
         {
             FieldAccessFlags flags = (FieldAccessFlags)reader.ReadUInt16();
             string name = constantPool.GetItem<Utf8ConstantPoolItem>(reader.ReadUInt16()).String;
@@ -130,7 +130,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             var attributes = attributeLoader.Load(reader);
 
-            return new FieldInfo(flags, name, descriptor, index, attributes);
+            return new FieldInfo(flags, name, descriptor, attributes);
         }
 
         private string[] LoadInterfaces(BigEndianBinaryReader reader)

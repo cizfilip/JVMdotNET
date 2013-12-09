@@ -21,8 +21,6 @@ namespace JVMdotNET.Core.ClassFile
 
         public abstract string[] ValidAttributes { get; }
 
-
-        //TODO: validace
         public T GetAttribute<T>(string attributeName) where T : AttributeBase
         {
             AttributeBase attribute;
