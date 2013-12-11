@@ -90,7 +90,11 @@
     <Compile Include="ClassFile\Loader\ConstantPoolLoader.cs" />
     <Compile Include="ClassFile\MethodAccessFlags.cs" />
     <Compile Include="ClassFile\MethodInfo.cs" />
-    <Compile Include="ClassFile\Signature.cs" />
+    <Compile Include="ClassFile\Signature\FieldSignature.cs" />
+    <Compile Include="ClassFile\Signature\JVMType.cs" />
+    <Compile Include="ClassFile\Signature\MethodSignature.cs" />
+    <Compile Include="ClassFile\Signature\Signature.cs" />
+    <Compile Include="ClassFile\Signature\TypeInfo.cs" />
     <Compile Include="ClassFile\StaticField.cs" />
     <Compile Include="ClassFile\Utils\BigEndianBinaryReader.cs" />
     <Compile Include="ClassFile\JavaClass.cs" />

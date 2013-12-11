@@ -1,6 +1,7 @@
 ﻿using JVMdotNET.Core.ClassFile.Attributes;
 using JVMdotNET.Core.ClassFile.ConstantPool;
 using JVMdotNET.Core.ClassFile.Utils;
+using JVMdotNET.Core.ClassFile.Signature;
 using JVMdotNET.Core.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -106,7 +107,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             var attributes = attributeLoader.Load(reader);
 
-            return new MethodInfo(flags, name, descriptor, attributes);
+            return new MethodInfo(flags, name, Signature.Signature.ParseMethodSignature(descriptor), attributes);
         }
 
         private FieldInfo[] LoadFields(BigEndianBinaryReader reader)
@@ -130,7 +131,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
 
             var attributes = attributeLoader.Load(reader);
 
-            return new FieldInfo(flags, name, descriptor, attributes);
+            return new FieldInfo(flags, name, Signature.Signature.ParseFieldSignature(descriptor), attributes);
         }
 
         private string[] LoadInterfaces(BigEndianBinaryReader reader)

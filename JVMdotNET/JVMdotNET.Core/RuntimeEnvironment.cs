@@ -31,10 +31,28 @@ namespace JVMdotNET.Core
             stack.Pop().Unload();
         }
 
-        public void PrepareMethodInvocation()
+        public void PrepareStaticMethodInvocation(object[] parameters, MethodRefConstantPoolItem methodRef)
         {
+            JavaClass classToRun = classArea.GetClass(methodRef.Class.Name);
+            MethodInfo methodToRun = classToRun.GetMethodInfo(methodRef.NameAndType.Name);
 
+            //TODO: check zda je metoda fakt staticka??
+
+            StackFrame newFrame = new StackFrame(classToRun, methodToRun);
+            newFrame.InitLocals(null, parameters);
+            stack.Push(newFrame);
         }
+
+        public void PrepareVirtualMethodInvocation(JavaInstance instance, object[] parameters, MethodRefConstantPoolItem methodRef)
+        {
+            JavaClass classToRun = classArea.GetClass(methodRef.Class.Name);
+            MethodInfo methodToRun = instance.JavaClass.GetMethodInfo(methodRef.NameAndType.Name);
+
+            StackFrame newFrame = new StackFrame(classToRun, methodToRun);
+            newFrame.InitLocals(instance, parameters);
+            stack.Push(newFrame);
+        }
+
 
         public void PrepareExceptionHandling()
         {
@@ -48,6 +66,10 @@ namespace JVMdotNET.Core
             return new JavaInstance(@class);
         }
 
+        
+
+        #region Fields Manipulation
+        
         public object GetStaticFieldValue(FieldRefConstantPoolItem fieldRef)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
@@ -74,11 +96,7 @@ namespace JVMdotNET.Core
             instance.Fields[index] = value;
         }
 
-        public void EnsureClassExists(ClassConstantPoolItem classRef)
-        {
-            //TODO: používá anewarray - classa může být i inteface a arrayclass (must be a symbolic reference to a class, array, or interface type)
-            classArea.GetClass(classRef.Name);
-        }
+        #endregion
 
         public void ExecuteProgram(JavaClass @class, MethodInfo mainMethod)
         {

@@ -27,6 +27,7 @@ namespace JVMdotNET.Core
                 newClass = loader.Load(reader);
             }
             
+            //TODO: spustit staticky constructor
             AddJavaClass(newClass);
         }
 

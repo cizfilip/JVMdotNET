@@ -48,7 +48,32 @@ namespace JVMdotNET.Core
             operandStack.Push(value);
         }
 
-        public void Run(RuntimeEnvironment env)
+        public void InitLocals(JavaInstance thisInstance, object[] arguments)
+        {
+            int localsIndex = 0;
+
+            if(thisInstance != null)
+            {
+                locals[0] = thisInstance;
+                localsIndex = 1;
+            }
+
+            foreach (var argument in arguments)
+            {
+                if (localsIndex >= locals.Length)
+                {
+                    throw new InvalidOperationException("Method arguments is too long!");
+                }
+                locals[localsIndex] = argument;
+                if (argument is long || argument is double)
+                {
+                    localsIndex++;
+                }
+                localsIndex++;
+            }
+        }
+
+        public void Run(RuntimeEnvironment environment)
         {
             CodeAttribute codeInfo = method.Code;
             byte[] code = codeInfo.Code;
@@ -178,7 +203,7 @@ namespace JVMdotNET.Core
                     case Instruction.caload:
                     case Instruction.saload:
                         index = operandStack.PopInt();
-                        array = (object[])operandStack.Pop();
+                        array = operandStack.PopArray();
                         if (array == null)
                         {
                             //TODO: throw NullPointerException
@@ -240,7 +265,7 @@ namespace JVMdotNET.Core
                     case Instruction.sastore:
                         value = operandStack.Pop();
                         index = operandStack.PopInt();
-                        array = (object[])operandStack.Pop();
+                        array = operandStack.PopArray();
                         if (array == null)
                         {
                             //TODO: throw NullPointerException
@@ -571,21 +596,19 @@ namespace JVMdotNET.Core
                     case Instruction.freturn:
                     case Instruction.dreturn:
                     case Instruction.areturn:
-                        env.PrepareReturn(operandStack.Pop());
+                        environment.PrepareReturn(operandStack.Pop());
                         return;
                     case Instruction.@return:
-                        env.PrepareReturnVoid();
+                        environment.PrepareReturnVoid();
                         return;
 
                     case Instruction.getstatic:
-                        index = code.ReadShort(ref pc);
-                        value = env.GetStaticFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index));
+                        value = environment.GetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code));
                         operandStack.Push(value);
                         break;
                     case Instruction.putstatic:
-                        index = code.ReadShort(ref pc);
                         value = operandStack.Pop();
-                        env.SetStaticFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index), value);
+                        environment.SetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), value);
                         break;
                     case Instruction.getfield:
                         instance = operandStack.PopInstance();
@@ -593,9 +616,8 @@ namespace JVMdotNET.Core
                         {
                             //TODO: throw NullPointerException
                         }
-                        index = code.ReadShort(ref pc);
                         operandStack.Push(
-                            env.GetFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index),
+                            environment.GetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code),
                             instance));
                         break;
                     case Instruction.putfield:
@@ -605,51 +627,62 @@ namespace JVMdotNET.Core
                         {
                             //TODO: throw NullPointerException
                         }
-                        index = code.ReadShort(ref pc);
-                        env.SetFieldValue(classObject.ConstantPool.GetItem<FieldRefConstantPoolItem>(index), 
+                        environment.SetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), 
                             instance,
                             value);
                         break;
-                    case Instruction.invokevirtual:
+
+                    case Instruction.invokestatic:
+                        InvokeStatic(code, environment);
                         break;
+                    case Instruction.invokevirtual:
+                        InvokeVirtual(code, environment);
+                        return;
+
                     case Instruction.invokespecial:
                         break;
-                    case Instruction.invokestatic:
-                        break;
+                    
                     case Instruction.invokeinterface:
                         break;
                     case Instruction.invokedynamic:
                         throw new NotImplementedException("invokedynamic instruction is not supported.");
 
                     case Instruction.@new:
-                        index = code.ReadShort(ref pc);
-                        operandStack.Push(
-                            env.CreateInstance(
-                            classObject.ConstantPool.GetItem<ClassConstantPoolItem>(index).Name));
+                        operandStack.Push(environment.CreateInstance(GetConstantPoolItem<ClassConstantPoolItem>(code).Name));
                         break;
                     case Instruction.newarray:
-                        NewArray();
+                        operandStack.Push(NewArray(operandStack.PopInt()));
                         pc++; //skip atype
                         break;
                     case Instruction.anewarray:
-                        index = code.ReadShort(ref pc);
-                        env.EnsureClassExists(classObject.ConstantPool.GetItem<ClassConstantPoolItem>(index));
-                        NewArray();
+                        pc += 2; //skip classRef
+                        operandStack.Push(NewArray(operandStack.PopInt()));
                         break;
                     case Instruction.multianewarray:
+                        pc += 2; //skip classRef
+                        NewMultiArray(code);
                         break;
                     case Instruction.arraylength:
+                        array = operandStack.PopArray();
+                        if (array == null)
+                        {
+                            //TODO: throw NullPointerException
+                        }
+                        operandStack.Push(array.Length);
                         break;
                     case Instruction.athrow:
+
                         break;
+
                     case Instruction.checkcast:
+                        //not implemented but allowed in bytecode (just skiped)
+                        pc += 2;
                         break;
                     case Instruction.instanceof:
-                        break;
+                        throw new NotImplementedException("Instruction instanceof not implemeted!");
                     case Instruction.monitorenter:
-                        break;
                     case Instruction.monitorexit:
-                        break;
+                        throw new NotImplementedException("monitor instructions not implemnted!");
                     case Instruction.wide:
                         wasWideInstruction = true;
                         break;
@@ -663,6 +696,8 @@ namespace JVMdotNET.Core
                 }
             }
         }
+
+        
 
         //TODO: check again if DUP implementations are correct...
         #region Dup instructions
@@ -933,14 +968,77 @@ namespace JVMdotNET.Core
 
         #region Array instructions
 
-        private void NewArray()
+        private object[] NewArray(int size)
         {
-            int size = operandStack.PopInt();
             if (size < 0)
             {
                 //TODO: throw NegativeArraySizeException 
             }
-            operandStack.Push(new object[size]);
+            return new object[size];
+        }
+
+        private void NewMultiArray(byte[] code)
+        {
+            int dimensions = code.ReadSByte(ref pc);
+
+            var sizes = new int[dimensions];
+
+            for (int i = dimensions - 1; i >= 0; i--)
+            {
+                sizes[i] = operandStack.PopInt();
+            }
+
+            operandStack.Push(CreateMultiArray(sizes, 0));
+        }
+
+        private object[] CreateMultiArray(int[] sizes, int index)
+        {
+            if (index == sizes.Length)
+            {
+                return null;
+            }
+
+            int size = sizes[index];
+            object[] array = NewArray(size);
+            for (int i = 0; i < size; i++)
+            {
+                array[i] = CreateMultiArray(sizes, index++);
+            }
+            return array;
+        }
+
+        #endregion
+
+        #region Invoke instructions
+        
+        private void InvokeStatic(byte[] code, RuntimeEnvironment environment)
+        {
+            var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+            var parameters = ExtractParameters(methodRef);
+
+            environment.PrepareStaticMethodInvocation(parameters, methodRef);
+        }
+
+        private void InvokeVirtual(byte[] code, RuntimeEnvironment environment)
+        {
+            var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+            var parameters = ExtractParameters(methodRef);
+
+            environment.PrepareVirtualMethodInvocation(operandStack.PopInstance(), parameters, methodRef);
+        }
+
+
+        private object[] ExtractParameters(MethodRefConstantPoolItem methodRef)
+        {
+            int parametersCount = methodRef.Signature.ParametersCount;
+            object[] parameters = new object[parametersCount];
+
+            for (int i = 0; i < parametersCount; i++)
+            {
+                parameters[i] = operandStack.Pop();
+            }
+
+            return parameters;
         }
 
         #endregion
@@ -956,6 +1054,12 @@ namespace JVMdotNET.Core
                 wasWideInstruction = false;
             }
             return returnValue;
+        }
+
+        private T GetConstantPoolItem<T>(byte[] code) where T : ConstantPoolItemBase
+        {
+            int index = code.ReadShort(ref pc);
+            return classObject.ConstantPool.GetItem<T>(index);
         }
 
         #endregion
@@ -1039,6 +1143,11 @@ namespace JVMdotNET.Core
         public static JavaInstance PopInstance(this Stack<object> stack)
         {
             return (JavaInstance)stack.Pop();
+        }
+
+        public static object[] PopArray(this Stack<object> stack)
+        {
+            return (object[])stack.Pop();
         }
     }
 }

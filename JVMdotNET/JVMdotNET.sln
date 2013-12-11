@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVMdotNET.Core", "JVMdotNET.Core\JVMdotNET.Core.csproj", "{9D26D543-59EC-4F5D-9BCB-A5D3B7C406D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVMdotNET.Console", "JVMdotNET.Console\JVMdotNET.Console.csproj", "{0D753A71-0C63-4F81-A839-D2C7A165BD8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{9D26D543-59EC-4F5D-9BCB-A5D3B7C406D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D26D543-59EC-4F5D-9BCB-A5D3B7C406D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D26D543-59EC-4F5D-9BCB-A5D3B7C406D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D753A71-0C63-4F81-A839-D2C7A165BD8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D753A71-0C63-4F81-A839-D2C7A165BD8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D753A71-0C63-4F81-A839-D2C7A165BD8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D753A71-0C63-4F81-A839-D2C7A165BD8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

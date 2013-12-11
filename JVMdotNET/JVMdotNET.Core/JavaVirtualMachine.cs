@@ -9,11 +9,21 @@ namespace JVMdotNET.Core
 {
     public class JavaVirtualMachine
     {
-       
+        private RuntimeClassArea classArea;
+        private RuntimeEnvironment runtime;
 
-        public JavaVirtualMachine()
+        public JavaVirtualMachine(params string[] classFiles)
         {
+            this.classArea = new RuntimeClassArea();
+            foreach (var classFile in classFiles)
+            {
+                classArea.LoadClassFile(classFile);
+            }
+        }
 
+        public void Run()
+        {
+            //runtime.ExecuteProgram()
         }
 
 

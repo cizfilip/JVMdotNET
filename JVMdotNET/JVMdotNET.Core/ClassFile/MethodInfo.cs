@@ -1,4 +1,5 @@
 ﻿using JVMdotNET.Core.ClassFile.Attributes;
+using JVMdotNET.Core.ClassFile.Signature;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,13 +23,23 @@ namespace JVMdotNET.Core.ClassFile
                                                                };
 
         public MethodAccessFlags AccessFlags { get; private set; }
+        public MethodSignature Signature { get; private set; }
+        
 
-        public MethodInfo(MethodAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
-            : base(name, descriptor, attributes)
+        public MethodInfo(MethodAccessFlags accessFlags, string name, MethodSignature signature, IDictionary<string, AttributeBase> attributes)
+            : base(name, attributes)
         {
             this.AccessFlags = accessFlags;
+            this.Signature = signature;
         }
         
+        public bool IsSpecialMethod
+        {
+            get
+            {
+                return Name == "<init>" || Name == "<clinit>";
+            }
+        }
 
         public override string[] ValidAttributes
         {

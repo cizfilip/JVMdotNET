@@ -50,6 +50,7 @@ namespace JVMdotNET.Core.ClassFile
             this.Attributes = attributes;
             this.IsResolved = false;
 
+            this.Methods = new Dictionary<string, MethodInfo>();
             this.InstanceFields = new Dictionary<string, InstanceField>();
             this.StaticFields = new Dictionary<string, StaticField>();
 
@@ -59,10 +60,20 @@ namespace JVMdotNET.Core.ClassFile
 
         private void LoadMethods(MethodInfo[] methods)
         {
-            this.Methods = new Dictionary<string, MethodInfo>();
             foreach (var method in methods)
             {
                 Methods.Add(method.Name, method);
+            }
+        }
+
+        private void AddVirtualMethods(IDictionary<string, MethodInfo> superMethods)
+        {
+            foreach (var method in superMethods.Values)
+            {
+                if (!Methods.ContainsKey(method.Name) && (method.AccessFlags.HasFlag(MethodAccessFlags.Public) || (method.AccessFlags.HasFlag(MethodAccessFlags.Protected))))
+                {
+                    Methods.Add(method.Name, method);
+                }
             }
         }
 
@@ -93,8 +104,8 @@ namespace JVMdotNET.Core.ClassFile
             }
             
             SuperClass = classArea.GetClass(Super);
-            SuperClass.Resolve(classArea);
             LoadFields(SuperClass.InstanceFields.Values.Select(f => f.Info));
+            AddVirtualMethods(SuperClass.Methods);
             this.IsResolved = true;
         }
 
@@ -110,11 +121,16 @@ namespace JVMdotNET.Core.ClassFile
             StaticFields[fieldName].Value = value;
         }
 
-        //TODO: ??
         public InstanceField GetInstanceFieldInfo(string fieldName)
         {
             //TODO: co kdyz field neexistuje
             return InstanceFields[fieldName];
+        }
+
+        public MethodInfo GetMethodInfo(string methodName)
+        {
+            //TODO: co kdyz metoda neexistuje
+            return Methods[methodName];
         }
 
         public string[] ValidAttributes

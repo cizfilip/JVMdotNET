@@ -1,4 +1,5 @@
 ﻿using JVMdotNET.Core.ClassFile.Attributes;
+using JVMdotNET.Core.ClassFile.Signature;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,12 +20,14 @@ namespace JVMdotNET.Core.ClassFile
                                                                };
 
         public FieldAccessFlags AccessFlags { get; private set; }
+        public FieldSignature Signature { get; private set; }
+        
 
-
-        public FieldInfo(FieldAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
-            : base(name, descriptor, attributes)
+        public FieldInfo(FieldAccessFlags accessFlags, string name, FieldSignature signature, IDictionary<string, AttributeBase> attributes)
+            : base(name, attributes)
         {
             this.AccessFlags = accessFlags;
+            this.Signature = signature;
         }
 
         public override string[] ValidAttributes
