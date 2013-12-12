@@ -14,6 +14,18 @@ namespace JVMdotNET.Core
     internal class StackFrame
     {
         private int pc;
+        public int PC
+        {
+            get
+            {
+                return pc;
+            }
+            set
+            {
+                pc = value;
+            }
+        }
+
         private bool wasWideInstruction;
 
         private object[] locals;
@@ -24,6 +36,22 @@ namespace JVMdotNET.Core
 
         private CodeAttribute codeInfo;
         private RuntimeEnvironment environment;
+
+        public ExceptionTableEntry[] ExceptionTable
+        {
+            get
+            {
+                return codeInfo.ExceptionTable;
+            }
+        }
+        public ConstantPoolItemBase[] ConstantPool
+        {
+            get
+            {
+                return classObject.ConstantPool;
+            }
+        }
+
 
         public StackFrame(MethodInfo method, RuntimeEnvironment environment)
         {
@@ -53,6 +81,11 @@ namespace JVMdotNET.Core
             operandStack.Push(value);
         }
 
+        public void ClearOperandStack()
+        {
+            operandStack.Clear();
+        }
+
         public void InitLocals(JavaInstance thisInstance, object[] arguments)
         {
             int localsIndex = 0;
@@ -78,8 +111,7 @@ namespace JVMdotNET.Core
             }
         }
 
-        
-        public void Run(JavaInstance exception)
+        public void Run()
         {
             byte[] code = codeInfo.Code;
             int codeLength = code.Length;
@@ -87,7 +119,7 @@ namespace JVMdotNET.Core
             //helper variables
             int index = 0;
             int newPC = 0;
-            object[] array= null;
+            object[] array = null;
             object value = null;
             int iValue = 0;
             long lValue = 0;
@@ -96,750 +128,680 @@ namespace JVMdotNET.Core
             JavaInstance instance = null;
             MethodRefConstantPoolItem methodRef = null;
 
-            //exception handling - propagation
-            if (exception != null)
+            var instruction = (Instruction)code.ReadByte(ref pc);
+            
+            switch (instruction)
             {
-                if (!TryThrow(exception))
-                {
+                case Instruction.nop:
                     return;
-                }
-                environment.ExceptionHandled();
-            }
+                case Instruction.aconst_null:
+                    operandStack.Push(null);
+                    return;
+                case Instruction.iconst_m1:
+                    operandStack.Push((int)-1);
+                    return;
+                case Instruction.iconst_0:
+                    operandStack.Push((int)0);
+                    return;
+                case Instruction.iconst_1:
+                    operandStack.Push((int)1);
+                    return;
+                case Instruction.iconst_2:
+                    operandStack.Push((int)2);
+                    return;
+                case Instruction.iconst_3:
+                    operandStack.Push((int)3);
+                    return;
+                case Instruction.iconst_4:
+                    operandStack.Push((int)4);
+                    return;
+                case Instruction.iconst_5:
+                    operandStack.Push((int)5);
+                    return;
+                case Instruction.lconst_0:
+                    operandStack.Push((long)0);
+                    return;
+                case Instruction.lconst_1:
+                    operandStack.Push((long)1);
+                    return;
+                case Instruction.fconst_0:
+                    operandStack.Push((float)0.0);
+                    return;
+                case Instruction.fconst_1:
+                    operandStack.Push((float)1.0);
+                    return;
+                case Instruction.fconst_2:
+                    operandStack.Push((float)2.0);
+                    return;
+                case Instruction.dconst_0:
+                    operandStack.Push((double)0.0);
+                    return;
+                case Instruction.dconst_1:
+                    operandStack.Push((double)1.0);
+                    return;
+                case Instruction.bipush:
+                    operandStack.Push((int)code.ReadSByte(ref pc));
+                    return;
+                case Instruction.sipush:
+                    operandStack.Push((int)code.ReadShort(ref pc));
+                    return;
 
-            while (pc < codeLength)
-            {
-                var instruction = (Instruction)code.ReadByte(ref pc);
+                //LDC instruction throws if used for class, method type or method handle constant pool items
+                case Instruction.ldc:
+                    index = code.ReadSByte(ref pc);
+                    environment.LoadConstant(index);
+                    return;
+                case Instruction.ldc_w:
+                    index = code.ReadShort(ref pc);
+                    environment.LoadConstant(index);
+                    return;
+                case Instruction.ldc2_w:
+                    index = code.ReadShort(ref pc);
+                    environment.LoadConstant(index);
+                    return;
 
-                switch (instruction)
-                {
-                    case Instruction.nop:
-                        break;
-                    case Instruction.aconst_null:
-                        operandStack.Push(null);
-                        break;
-                    case Instruction.iconst_m1:
-                        operandStack.Push((int)-1);
-                        break;
-                    case Instruction.iconst_0:
-                        operandStack.Push((int)0);
-                        break;
-                    case Instruction.iconst_1:
-                        operandStack.Push((int)1);
-                        break;
-                    case Instruction.iconst_2:
-                        operandStack.Push((int)2);
-                        break;
-                    case Instruction.iconst_3:
-                        operandStack.Push((int)3);
-                        break;
-                    case Instruction.iconst_4:
-                        operandStack.Push((int)4);
-                        break;
-                    case Instruction.iconst_5:
-                        operandStack.Push((int)5);
-                        break;
-                    case Instruction.lconst_0:
-                        operandStack.Push((long)0);
-                        break;
-                    case Instruction.lconst_1:
-                        operandStack.Push((long)1);
-                        break;
-                    case Instruction.fconst_0:
-                        operandStack.Push((float)0.0);
-                        break;
-                    case Instruction.fconst_1:
-                        operandStack.Push((float)1.0);
-                        break;
-                    case Instruction.fconst_2:
-                        operandStack.Push((float)2.0);
-                        break;
-                    case Instruction.dconst_0:
-                        operandStack.Push((double)0.0);
-                        break;
-                    case Instruction.dconst_1:
-                        operandStack.Push((double)1.0);
-                        break;
-                    case Instruction.bipush:
-                        operandStack.Push((int)code.ReadSByte(ref pc));
-                        break;
-                    case Instruction.sipush:
-                        operandStack.Push((int)code.ReadShort(ref pc));
-                        break;
-
-                    //LDC instruction throws if used for class, method type or method handle constant pool items
-                    case Instruction.ldc:
-                        index = code.ReadSByte(ref pc);
-                        Ldc(code, index);
-                        break;
-                    case Instruction.ldc_w:
-                        index = code.ReadShort(ref pc);
-                        Ldc(code, index);
-                        break;
-                    case Instruction.ldc2_w:
-                        index = code.ReadShort(ref pc);
-                        Ldc(code, index);
-                        break;
-
-                    case Instruction.iload:
-                    case Instruction.lload:
-                    case Instruction.fload:
-                    case Instruction.dload:
-                    case Instruction.aload:
-                        index = ReadWithWideCheck(code);
-                        operandStack.Push(locals[index]);
-                        break;
-                    case Instruction.iload_0:
-                    case Instruction.lload_0:
-                    case Instruction.fload_0:
-                    case Instruction.dload_0:
-                    case Instruction.aload_0:
-                        operandStack.Push(locals[0]);
-                        break;
-                    case Instruction.iload_1:
-                    case Instruction.lload_1:
-                    case Instruction.fload_1:
-                    case Instruction.dload_1:
-                    case Instruction.aload_1:
-                        operandStack.Push(locals[1]);
-                        break;
-                    case Instruction.iload_2:
-                    case Instruction.lload_2:
-                    case Instruction.fload_2:
-                    case Instruction.dload_2:
-                    case Instruction.aload_2:
-                        operandStack.Push(locals[2]);
-                        break;
-                    case Instruction.iload_3:
-                    case Instruction.lload_3:
-                    case Instruction.fload_3:
-                    case Instruction.dload_3:
-                    case Instruction.aload_3:
-                        operandStack.Push(locals[3]);
-                        break;
-                    case Instruction.iaload:
-                    case Instruction.laload:
-                    case Instruction.faload:
-                    case Instruction.daload:
-                    case Instruction.aaload:
-                    case Instruction.baload:
-                    case Instruction.caload:
-                    case Instruction.saload:
-                        index = operandStack.PopInt();
-                        array = operandStack.PopArray();
-                        if (array == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        if (index < 0 || index >= array.Length)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(array[index]);
-                        break;
+                case Instruction.iload:
+                case Instruction.lload:
+                case Instruction.fload:
+                case Instruction.dload:
+                case Instruction.aload:
+                    index = ReadWithWideCheck(code);
+                    operandStack.Push(locals[index]);
+                    return;
+                case Instruction.iload_0:
+                case Instruction.lload_0:
+                case Instruction.fload_0:
+                case Instruction.dload_0:
+                case Instruction.aload_0:
+                    operandStack.Push(locals[0]);
+                    return;
+                case Instruction.iload_1:
+                case Instruction.lload_1:
+                case Instruction.fload_1:
+                case Instruction.dload_1:
+                case Instruction.aload_1:
+                    operandStack.Push(locals[1]);
+                    return;
+                case Instruction.iload_2:
+                case Instruction.lload_2:
+                case Instruction.fload_2:
+                case Instruction.dload_2:
+                case Instruction.aload_2:
+                    operandStack.Push(locals[2]);
+                    return;
+                case Instruction.iload_3:
+                case Instruction.lload_3:
+                case Instruction.fload_3:
+                case Instruction.dload_3:
+                case Instruction.aload_3:
+                    operandStack.Push(locals[3]);
+                    return;
+                case Instruction.iaload:
+                case Instruction.laload:
+                case Instruction.faload:
+                case Instruction.daload:
+                case Instruction.aaload:
+                case Instruction.baload:
+                case Instruction.caload:
+                case Instruction.saload:
+                    index = operandStack.PopInt();
+                    array = operandStack.PopArray();
+                    if (array == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+                    if (index < 0 || index >= array.Length)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName);
+                        return;
+                    }
+                    operandStack.Push(array[index]);
+                    return;
 
 
-                    case Instruction.istore:
-                    case Instruction.lstore:
-                    case Instruction.fstore:
-                    case Instruction.dstore:
-                    case Instruction.astore:
-                        index = ReadWithWideCheck(code);
-                        locals[index] = operandStack.Pop();
-                        break;
+                case Instruction.istore:
+                case Instruction.lstore:
+                case Instruction.fstore:
+                case Instruction.dstore:
+                case Instruction.astore:
+                    index = ReadWithWideCheck(code);
+                    locals[index] = operandStack.Pop();
+                    return;
 
-                    case Instruction.istore_0:
-                    case Instruction.lstore_0:
-                    case Instruction.fstore_0:
-                    case Instruction.dstore_0:
-                    case Instruction.astore_0:
-                        locals[0] = operandStack.Pop();
-                        break;
-                    case Instruction.istore_1:
-                    case Instruction.lstore_1:
-                    case Instruction.fstore_1:
-                    case Instruction.dstore_1:
-                    case Instruction.astore_1:
-                        locals[1] = operandStack.Pop();
-                        break;
-                    case Instruction.istore_2:
-                    case Instruction.lstore_2:
-                    case Instruction.fstore_2:
-                    case Instruction.dstore_2:
-                    case Instruction.astore_2:
-                        locals[2] = operandStack.Pop();
-                        break;
-                    case Instruction.istore_3:
-                    case Instruction.lstore_3:
-                    case Instruction.fstore_3:
-                    case Instruction.dstore_3:
-                    case Instruction.astore_3:
-                        locals[3] = operandStack.Pop();
-                        break;
-                    
-
-                    case Instruction.iastore:
-                    case Instruction.lastore:
-                    case Instruction.fastore:
-                    case Instruction.dastore:
-                    case Instruction.aastore:
-                    case Instruction.bastore:
-                    case Instruction.castore:
-                    case Instruction.sastore:
-                        value = operandStack.Pop();
-                        index = operandStack.PopInt();
-                        array = operandStack.PopArray();
-                        if (array == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        if (index < 0 || index >= array.Length)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        array[index] = value;
-                        break;
+                case Instruction.istore_0:
+                case Instruction.lstore_0:
+                case Instruction.fstore_0:
+                case Instruction.dstore_0:
+                case Instruction.astore_0:
+                    locals[0] = operandStack.Pop();
+                    return;
+                case Instruction.istore_1:
+                case Instruction.lstore_1:
+                case Instruction.fstore_1:
+                case Instruction.dstore_1:
+                case Instruction.astore_1:
+                    locals[1] = operandStack.Pop();
+                    return;
+                case Instruction.istore_2:
+                case Instruction.lstore_2:
+                case Instruction.fstore_2:
+                case Instruction.dstore_2:
+                case Instruction.astore_2:
+                    locals[2] = operandStack.Pop();
+                    return;
+                case Instruction.istore_3:
+                case Instruction.lstore_3:
+                case Instruction.fstore_3:
+                case Instruction.dstore_3:
+                case Instruction.astore_3:
+                    locals[3] = operandStack.Pop();
+                    return;
 
 
-                    case Instruction.pop:
+                case Instruction.iastore:
+                case Instruction.lastore:
+                case Instruction.fastore:
+                case Instruction.dastore:
+                case Instruction.aastore:
+                case Instruction.bastore:
+                case Instruction.castore:
+                case Instruction.sastore:
+                    value = operandStack.Pop();
+                    index = operandStack.PopInt();
+                    array = operandStack.PopArray();
+                    if (array == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+                    if (index < 0 || index >= array.Length)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName);
+                        return;
+                    }
+                    array[index] = value;
+                    return;
+
+
+                case Instruction.pop:
+                    operandStack.Pop();
+                    return;
+                case Instruction.pop2: // JVM stings.....
+                    value = operandStack.Pop();
+                    if (!value.IsCategory2Type())
+                    {
                         operandStack.Pop();
-                        break;
-                    case Instruction.pop2: // JVM stings.....
-                        value = operandStack.Pop();
-                        if (!value.IsCategory2Type())
-                        {
-                            operandStack.Pop();
-                        }
-                        break;
-                    case Instruction.dup:
-                        Dup();
-                        break;
-                    case Instruction.dup_x1:
-                        DupX1();
-                        break;
-                    case Instruction.dup_x2:
-                        DupX2();
-                        break;
-                    case Instruction.dup2:
-                        Dup2();
-                        break;
-                    case Instruction.dup2_x1:
-                        Dup2X1();
-                        break;
-                    case Instruction.dup2_x2:
-                        Dup2X2();
-                        break;
-                    case Instruction.swap:
-                        value = operandStack.Pop();
-                        operandStack.PushMany(value, operandStack.Pop());
-                        break;
-                    case Instruction.iadd:
-                        operandStack.Push(operandStack.PopInt() + operandStack.PopInt());
-                        break;
-                    case Instruction.ladd:
-                        operandStack.Push(operandStack.PopLong() + operandStack.PopLong());
-                        break;
-                    case Instruction.fadd:
-                        operandStack.Push(operandStack.PopFloat() + operandStack.PopFloat());
-                        break;
-                    case Instruction.dadd:
-                        operandStack.Push(operandStack.PopDouble() + operandStack.PopDouble());
-                        break;
-                    case Instruction.isub:
-                        operandStack.Push(-operandStack.PopInt() + operandStack.PopInt());
-                        break;
-                    case Instruction.lsub:
-                        operandStack.Push(-operandStack.PopLong() + operandStack.PopLong());
-                        break;
-                    case Instruction.fsub:
-                        operandStack.Push(-operandStack.PopFloat() + operandStack.PopFloat());
-                        break;
-                    case Instruction.dsub:
-                        operandStack.Push(-operandStack.PopDouble() + operandStack.PopDouble());
-                        break;
-                    case Instruction.imul:
-                        operandStack.Push(operandStack.PopInt() * operandStack.PopInt());
-                        break;
-                    case Instruction.lmul:
-                        operandStack.Push(operandStack.PopLong() * operandStack.PopLong());
-                        break;
-                    case Instruction.fmul:
-                        operandStack.Push(operandStack.PopFloat() * operandStack.PopFloat());
-                        break;
-                    case Instruction.dmul:
-                        operandStack.Push(operandStack.PopDouble() * operandStack.PopDouble());
-                        break;
-                    
-                    case Instruction.idiv:
-                        iValue = operandStack.PopInt();
-                        if (iValue == (int)0)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(operandStack.PopInt() / iValue);
-                        break;
-                    case Instruction.ldiv:
-                        lValue = operandStack.PopLong();
-                        if (lValue == (long)0)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(operandStack.PopLong() / lValue);
-                        break;
-                    case Instruction.fdiv:
-                        fValue = operandStack.PopFloat();
-                        operandStack.Push(operandStack.PopFloat() / fValue);
-                        break;
-                    case Instruction.ddiv:
-                        dValue = operandStack.PopDouble();
-                        operandStack.Push(operandStack.PopDouble() / dValue);
-                        break;
-                    case Instruction.irem:
-                        iValue = operandStack.PopInt();
-                        if (iValue == (int)0)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(operandStack.PopInt() % iValue);
-                        break;
-                    case Instruction.lrem:
-                        lValue = operandStack.PopLong();
-                        if (lValue == (long)0)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(operandStack.PopLong() % lValue);
-                        break;
-                    case Instruction.frem:
-                        fValue = operandStack.PopFloat();
-                        operandStack.Push(operandStack.PopFloat() % fValue);
-                        break;
-                    case Instruction.drem:
-                        dValue = operandStack.PopDouble();
-                        operandStack.Push(operandStack.PopDouble() % dValue);
-                        break;
-                    case Instruction.ineg:
-                        operandStack.Push(-operandStack.PopInt());
-                        break;
-                    case Instruction.lneg:
-                        operandStack.Push(-operandStack.PopLong());
-                        break;
-                    case Instruction.fneg:
-                        operandStack.Push(-operandStack.PopFloat());
-                        break;
-                    case Instruction.dneg:
-                        operandStack.Push(-operandStack.PopDouble());
-                        break;
-                    case Instruction.ishl:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopInt() << iValue);
-                        break;
-                    case Instruction.lshl:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopLong() << iValue);
-                        break;
-                    case Instruction.ishr:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopInt() >> iValue);
-                        break;
-                    case Instruction.lshr:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopLong() >> iValue);
-                        break;
-                    case Instruction.iushr:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopUInt() >> iValue);
-                        break;
-                    case Instruction.lushr:
-                        iValue = operandStack.PopInt();
-                        operandStack.Push(operandStack.PopULong() >> iValue);
-                        break;
-                    case Instruction.iand:
-                        operandStack.Push(operandStack.PopInt() & operandStack.PopInt());
-                        break;
-                    case Instruction.land:
-                        operandStack.Push(operandStack.PopLong() & operandStack.PopLong());
-                        break;
-                    case Instruction.ior:
-                        operandStack.Push(operandStack.PopInt() | operandStack.PopInt());
-                        break;
-                    case Instruction.lor:
-                        operandStack.Push(operandStack.PopLong() | operandStack.PopLong());
-                        break;
-                    case Instruction.ixor:
-                        operandStack.Push(operandStack.PopInt() ^ operandStack.PopInt());
-                        break;
-                    case Instruction.lxor:
-                        operandStack.Push(operandStack.PopLong() ^ operandStack.PopLong());
-                        break;
-                    case Instruction.iinc:
-                        index = ReadWithWideCheck(code, unsetWideFlag: false);
-                        iValue = ReadWithWideCheck(code);
-                        locals[index] = (int)locals[index] + iValue;
-                        break;
-                    case Instruction.i2l:
-                        operandStack.Push((long)operandStack.PopInt());
-                        break;
-                    case Instruction.i2f:
-                        operandStack.Push((float)operandStack.PopInt());
-                        break;
-                    case Instruction.i2d:
-                        operandStack.Push((double)operandStack.PopInt());
-                        break;
-                    case Instruction.l2i:
-                        operandStack.Push((int)operandStack.PopLong());
-                        break;
-                    case Instruction.l2f:
-                        operandStack.Push((float)operandStack.PopLong());
-                        break;
-                    case Instruction.l2d:
-                        operandStack.Push((double)operandStack.PopLong());
-                        break;
-                    case Instruction.f2i:
-                        operandStack.Push((int)operandStack.PopFloat());
-                        break;
-                    case Instruction.f2l:
-                        operandStack.Push((long)operandStack.PopFloat());
-                        break;
-                    case Instruction.f2d:
-                        operandStack.Push((double)operandStack.PopFloat());
-                        break;
-                    case Instruction.d2i:
-                        operandStack.Push((int)operandStack.PopDouble());
-                        break;
-                    case Instruction.d2l:
-                        operandStack.Push((long)operandStack.PopDouble());
-                        break;
-                    case Instruction.d2f:
-                        operandStack.Push((float)operandStack.PopDouble());
-                        break;
-                    case Instruction.i2b:
-                        operandStack.Push((int)(byte)operandStack.PopInt());
-                        break;
-                    case Instruction.i2c:
-                        operandStack.Push((int)(char)operandStack.PopInt());
-                        break;
-                    case Instruction.i2s:
-                        operandStack.Push((int)(short)operandStack.PopInt());
-                        break;
+                    }
+                    return;
+                case Instruction.dup:
+                    Dup();
+                    return;
+                case Instruction.dup_x1:
+                    DupX1();
+                    return;
+                case Instruction.dup_x2:
+                    DupX2();
+                    return;
+                case Instruction.dup2:
+                    Dup2();
+                    return;
+                case Instruction.dup2_x1:
+                    Dup2X1();
+                    return;
+                case Instruction.dup2_x2:
+                    Dup2X2();
+                    return;
+                case Instruction.swap:
+                    value = operandStack.Pop();
+                    operandStack.PushMany(value, operandStack.Pop());
+                    return;
+                case Instruction.iadd:
+                    operandStack.Push(operandStack.PopInt() + operandStack.PopInt());
+                    return;
+                case Instruction.ladd:
+                    operandStack.Push(operandStack.PopLong() + operandStack.PopLong());
+                    return;
+                case Instruction.fadd:
+                    operandStack.Push(operandStack.PopFloat() + operandStack.PopFloat());
+                    return;
+                case Instruction.dadd:
+                    operandStack.Push(operandStack.PopDouble() + operandStack.PopDouble());
+                    return;
+                case Instruction.isub:
+                    operandStack.Push(-operandStack.PopInt() + operandStack.PopInt());
+                    return;
+                case Instruction.lsub:
+                    operandStack.Push(-operandStack.PopLong() + operandStack.PopLong());
+                    return;
+                case Instruction.fsub:
+                    operandStack.Push(-operandStack.PopFloat() + operandStack.PopFloat());
+                    return;
+                case Instruction.dsub:
+                    operandStack.Push(-operandStack.PopDouble() + operandStack.PopDouble());
+                    return;
+                case Instruction.imul:
+                    operandStack.Push(operandStack.PopInt() * operandStack.PopInt());
+                    return;
+                case Instruction.lmul:
+                    operandStack.Push(operandStack.PopLong() * operandStack.PopLong());
+                    return;
+                case Instruction.fmul:
+                    operandStack.Push(operandStack.PopFloat() * operandStack.PopFloat());
+                    return;
+                case Instruction.dmul:
+                    operandStack.Push(operandStack.PopDouble() * operandStack.PopDouble());
+                    return;
 
-                    case Instruction.lcmp:
-                        LCmp();
-                        break;
-                    case Instruction.fcmpl:
-                        FCmp(nanIsOne: false);
-                        break;
-                    case Instruction.fcmpg:
-                        FCmp(nanIsOne: true);
-                        break;
-                    case Instruction.dcmpl:
-                        DCmp(nanIsOne: false);
-                        break;
-                    case Instruction.dcmpg:
-                        DCmp(nanIsOne: true);
-                        break;
-                    case Instruction.ifeq:
-                        Jump<int>(v => v == 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifne:
-                        Jump<int>(v => v != 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.iflt:
-                        Jump<int>(v => v < 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifge:
-                        Jump<int>(v => v >= 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifgt:
-                        Jump<int>(v => v > 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifle:
-                        Jump<int>(v => v <= 0, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmpeq:
-                        JumpTwoValues<int>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmpne:
-                        JumpTwoValues<int>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmplt:
-                        JumpTwoValues<int>((v1, v2) => v1 < v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmpge:
-                        JumpTwoValues<int>((v1, v2) => v1 >= v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmpgt:
-                        JumpTwoValues<int>((v1, v2) => v1 > v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_icmple:
-                        JumpTwoValues<int>((v1, v2) => v1 <= v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_acmpeq:
-                        JumpTwoValues<JavaInstance>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.if_acmpne:
-                        JumpTwoValues<JavaInstance>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifnull:
-                        Jump<JavaInstance>(i => i == null, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.ifnonnull:
-                        Jump<JavaInstance>(i => i != null, code.ReadShort(ref pc));
-                        break;
-                    case Instruction.@goto:
-                        pc = (int)code.ReadShort(ref pc);
-                        break;
-                    case Instruction.goto_w:
-                        pc = code.ReadInt(ref pc);
-                        break;
-                    case Instruction.jsr:
-                        newPC = (int)code.ReadShort(ref pc);
-                        operandStack.Push(pc);
-                        pc = newPC;
-                        break;
-                    case Instruction.jsr_w:
-                        newPC = code.ReadInt(ref pc);
-                        operandStack.Push(pc);
-                        pc = newPC;
-                        break;
-                    case Instruction.ret:
-                        index = ReadWithWideCheck(code);
-                        pc = (int)locals[index];
-                        break;
-                    case Instruction.tableswitch:
-                        TableSwitch(code);
-                        break;
-                    case Instruction.lookupswitch:
-                        LookupSwitch(code);
-                        break;
-
-                    //TODO: u returnu handlovat synchronizaci (pokud mela metoda flag synchronized) pres monitor
-                    case Instruction.ireturn:
-                    case Instruction.lreturn:
-                    case Instruction.freturn:
-                    case Instruction.dreturn:
-                    case Instruction.areturn:
-                        environment.PrepareReturn(operandStack.Pop());
+                case Instruction.idiv:
+                    iValue = operandStack.PopInt();
+                    if (iValue == (int)0)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
                         return;
-                    case Instruction.@return:
-                        environment.PrepareReturnVoid();
+                    }
+                    operandStack.Push(operandStack.PopInt() / iValue);
+                    return;
+                case Instruction.ldiv:
+                    lValue = operandStack.PopLong();
+                    if (lValue == (long)0)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
                         return;
-
-                    case Instruction.getstatic:
-                        value = environment.GetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code));
-                        operandStack.Push(value);
-                        break;
-                    case Instruction.putstatic:
-                        value = operandStack.Pop();
-                        environment.SetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), value);
-                        break;
-                    case Instruction.getfield:
-                        instance = operandStack.PopInstance();
-                        if (instance == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(
-                            environment.GetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code),
-                            instance));
-                        break;
-                    case Instruction.putfield:
-                        value = operandStack.Pop();
-                        instance = operandStack.PopInstance();
-                        if (instance == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        environment.SetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), 
-                            instance,
-                            value);
-                        break;
-
-                    case Instruction.invokestatic:
-                        InvokeStatic(code);
+                    }
+                    operandStack.Push(operandStack.PopLong() / lValue);
+                    return;
+                case Instruction.fdiv:
+                    fValue = operandStack.PopFloat();
+                    operandStack.Push(operandStack.PopFloat() / fValue);
+                    return;
+                case Instruction.ddiv:
+                    dValue = operandStack.PopDouble();
+                    operandStack.Push(operandStack.PopDouble() / dValue);
+                    return;
+                case Instruction.irem:
+                    iValue = operandStack.PopInt();
+                    if (iValue == (int)0)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
                         return;
-                    case Instruction.invokevirtual:
-                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
-                        array = ExtractParameters(methodRef);
-
-                        instance = operandStack.PopInstance();
-                        if (instance == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-
-                        environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
+                    }
+                    operandStack.Push(operandStack.PopInt() % iValue);
+                    return;
+                case Instruction.lrem:
+                    lValue = operandStack.PopLong();
+                    if (lValue == (long)0)
+                    {
+                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
                         return;
-                    case Instruction.invokespecial:
-                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
-                        array = ExtractParameters(methodRef);
+                    }
+                    operandStack.Push(operandStack.PopLong() % lValue);
+                    return;
+                case Instruction.frem:
+                    fValue = operandStack.PopFloat();
+                    operandStack.Push(operandStack.PopFloat() % fValue);
+                    return;
+                case Instruction.drem:
+                    dValue = operandStack.PopDouble();
+                    operandStack.Push(operandStack.PopDouble() % dValue);
+                    return;
+                case Instruction.ineg:
+                    operandStack.Push(-operandStack.PopInt());
+                    return;
+                case Instruction.lneg:
+                    operandStack.Push(-operandStack.PopLong());
+                    return;
+                case Instruction.fneg:
+                    operandStack.Push(-operandStack.PopFloat());
+                    return;
+                case Instruction.dneg:
+                    operandStack.Push(-operandStack.PopDouble());
+                    return;
+                case Instruction.ishl:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopInt() << iValue);
+                    return;
+                case Instruction.lshl:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopLong() << iValue);
+                    return;
+                case Instruction.ishr:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopInt() >> iValue);
+                    return;
+                case Instruction.lshr:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopLong() >> iValue);
+                    return;
+                case Instruction.iushr:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopUInt() >> iValue);
+                    return;
+                case Instruction.lushr:
+                    iValue = operandStack.PopInt();
+                    operandStack.Push(operandStack.PopULong() >> iValue);
+                    return;
+                case Instruction.iand:
+                    operandStack.Push(operandStack.PopInt() & operandStack.PopInt());
+                    return;
+                case Instruction.land:
+                    operandStack.Push(operandStack.PopLong() & operandStack.PopLong());
+                    return;
+                case Instruction.ior:
+                    operandStack.Push(operandStack.PopInt() | operandStack.PopInt());
+                    return;
+                case Instruction.lor:
+                    operandStack.Push(operandStack.PopLong() | operandStack.PopLong());
+                    return;
+                case Instruction.ixor:
+                    operandStack.Push(operandStack.PopInt() ^ operandStack.PopInt());
+                    return;
+                case Instruction.lxor:
+                    operandStack.Push(operandStack.PopLong() ^ operandStack.PopLong());
+                    return;
+                case Instruction.iinc:
+                    index = ReadWithWideCheck(code, unsetWideFlag: false);
+                    iValue = ReadWithWideCheck(code);
+                    locals[index] = (int)locals[index] + iValue;
+                    return;
+                case Instruction.i2l:
+                    operandStack.Push((long)operandStack.PopInt());
+                    return;
+                case Instruction.i2f:
+                    operandStack.Push((float)operandStack.PopInt());
+                    return;
+                case Instruction.i2d:
+                    operandStack.Push((double)operandStack.PopInt());
+                    return;
+                case Instruction.l2i:
+                    operandStack.Push((int)operandStack.PopLong());
+                    return;
+                case Instruction.l2f:
+                    operandStack.Push((float)operandStack.PopLong());
+                    return;
+                case Instruction.l2d:
+                    operandStack.Push((double)operandStack.PopLong());
+                    return;
+                case Instruction.f2i:
+                    operandStack.Push((int)operandStack.PopFloat());
+                    return;
+                case Instruction.f2l:
+                    operandStack.Push((long)operandStack.PopFloat());
+                    return;
+                case Instruction.f2d:
+                    operandStack.Push((double)operandStack.PopFloat());
+                    return;
+                case Instruction.d2i:
+                    operandStack.Push((int)operandStack.PopDouble());
+                    return;
+                case Instruction.d2l:
+                    operandStack.Push((long)operandStack.PopDouble());
+                    return;
+                case Instruction.d2f:
+                    operandStack.Push((float)operandStack.PopDouble());
+                    return;
+                case Instruction.i2b:
+                    operandStack.Push((int)(byte)operandStack.PopInt());
+                    return;
+                case Instruction.i2c:
+                    operandStack.Push((int)(char)operandStack.PopInt());
+                    return;
+                case Instruction.i2s:
+                    operandStack.Push((int)(short)operandStack.PopInt());
+                    return;
 
-                        instance = operandStack.PopInstance();
-                        if (instance == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
+                case Instruction.lcmp:
+                    LCmp();
+                    return;
+                case Instruction.fcmpl:
+                    FCmp(nanIsOne: false);
+                    return;
+                case Instruction.fcmpg:
+                    FCmp(nanIsOne: true);
+                    return;
+                case Instruction.dcmpl:
+                    DCmp(nanIsOne: false);
+                    return;
+                case Instruction.dcmpg:
+                    DCmp(nanIsOne: true);
+                    return;
+                case Instruction.ifeq:
+                    Jump<int>(v => v == 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifne:
+                    Jump<int>(v => v != 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.iflt:
+                    Jump<int>(v => v < 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifge:
+                    Jump<int>(v => v >= 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifgt:
+                    Jump<int>(v => v > 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifle:
+                    Jump<int>(v => v <= 0, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmpeq:
+                    JumpTwoValues<int>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmpne:
+                    JumpTwoValues<int>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmplt:
+                    JumpTwoValues<int>((v1, v2) => v1 < v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmpge:
+                    JumpTwoValues<int>((v1, v2) => v1 >= v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmpgt:
+                    JumpTwoValues<int>((v1, v2) => v1 > v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_icmple:
+                    JumpTwoValues<int>((v1, v2) => v1 <= v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_acmpeq:
+                    JumpTwoValues<JavaInstance>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.if_acmpne:
+                    JumpTwoValues<JavaInstance>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifnull:
+                    Jump<JavaInstance>(i => i == null, code.ReadShort(ref pc));
+                    return;
+                case Instruction.ifnonnull:
+                    Jump<JavaInstance>(i => i != null, code.ReadShort(ref pc));
+                    return;
+                case Instruction.@goto:
+                    pc = (int)code.ReadShort(ref pc);
+                    return;
+                case Instruction.goto_w:
+                    pc = code.ReadInt(ref pc);
+                    return;
+                case Instruction.jsr:
+                    newPC = (int)code.ReadShort(ref pc);
+                    operandStack.Push(pc);
+                    pc = newPC;
+                    return;
+                case Instruction.jsr_w:
+                    newPC = code.ReadInt(ref pc);
+                    operandStack.Push(pc);
+                    pc = newPC;
+                    return;
+                case Instruction.ret:
+                    index = ReadWithWideCheck(code);
+                    pc = (int)locals[index];
+                    return;
+                case Instruction.tableswitch:
+                    TableSwitch(code);
+                    return;
+                case Instruction.lookupswitch:
+                    LookupSwitch(code);
+                    return;
 
-                        environment.PrepareSpecialMethodInvocation(instance, array, methodRef);
+                case Instruction.ireturn:
+                case Instruction.lreturn:
+                case Instruction.freturn:
+                case Instruction.dreturn:
+                case Instruction.areturn:
+                    environment.PrepareReturn(operandStack.Pop());
+                    return;
+                case Instruction.@return:
+                    environment.PrepareReturnVoid();
+                    return;
+
+                case Instruction.getstatic:
+                    environment.GetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code));
+                    return;
+                case Instruction.putstatic:
+                    value = operandStack.Pop();
+                    environment.SetStaticFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), value);
+                    return;
+                case Instruction.getfield:
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
                         return;
-                    case Instruction.invokeinterface:
-                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
-                        array = ExtractParameters(methodRef);
-
-                        instance = operandStack.PopInstance();
-                        if (instance == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-
-                        environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
-                        pc += 2; //Skip count and 0 parameters 
+                    }
+                    environment.GetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), instance);
+                    return;
+                case Instruction.putfield:
+                    value = operandStack.Pop();
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
                         return;
+                    }
+                    environment.SetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), instance, value);
+                    return;
 
-                    case Instruction.invokedynamic:
-                        throw new NotImplementedException("invokedynamic instruction is not supported.");
+                case Instruction.invokestatic:
+                    InvokeStatic(code);
+                    return;
+                case Instruction.invokevirtual:
+                    methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                    array = ExtractParameters(methodRef);
 
-                    case Instruction.@new:
-                        operandStack.Push(environment.CreateInstance(GetConstantPoolItem<ClassConstantPoolItem>(code).Name));
-                        break;
-                    case Instruction.newarray:
-                        iValue = operandStack.PopInt();
-                        if (iValue < 0)
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+
+                    environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
+                    return;
+                case Instruction.invokespecial:
+                    methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                    array = ExtractParameters(methodRef);
+
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+
+                    environment.PrepareSpecialMethodInvocation(instance, array, methodRef);
+                    return;
+                case Instruction.invokeinterface:
+                    methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                    array = ExtractParameters(methodRef);
+
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+
+                    environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
+                    pc += 2; //Skip count and 0 parameters 
+                    return;
+
+                case Instruction.@new:
+                    environment.CreateInstance(GetConstantPoolItem<ClassConstantPoolItem>(code).Name);
+                    return;
+                case Instruction.newarray:
+                    iValue = operandStack.PopInt();
+                    if (iValue < 0)
+                    {
+                        environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
+                        return;
+                    }
+                    operandStack.Push(new object[iValue]);
+                    pc++; //skip atype
+                    return;
+                case Instruction.anewarray:
+                    pc += 2; //skip classRef
+                    iValue = operandStack.PopInt();
+                    if (iValue < 0)
+                    {
+                        environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
+                        return;
+                    }
+                    operandStack.Push(new object[iValue]);
+                    return;
+                case Instruction.multianewarray:
+                    pc += 2; //skip classRef
+                    int dimensions = code.ReadSByte(ref pc);
+                    var sizes = new int[dimensions];
+                    for (int i = dimensions - 1; i >= 0; i--)
+                    {
+                        sizes[i] = operandStack.PopInt();
+                        if (sizes[i] < 0)
                         {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(new object[iValue]);
-                        pc++; //skip atype
-                        break;
-                    case Instruction.anewarray:
-                        pc += 2; //skip classRef
-                        iValue = operandStack.PopInt();
-                        if (iValue < 0)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(new object[iValue]);
-                        break;
-                    case Instruction.multianewarray:
-                        pc += 2; //skip classRef
-                        int dimensions = code.ReadSByte(ref pc);
-                        var sizes = new int[dimensions];
-                        for (int i = dimensions - 1; i >= 0; i--)
-                        {
-                            sizes[i] = operandStack.PopInt();
-                            if (sizes[i] < 0)
-                            {
-                               if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
-                               {
-                                   return;
-                               }
-                            }
-                        }
-                        operandStack.Push(CreateMultiArray(sizes, 0));
-                        break;
-                    case Instruction.arraylength:
-                        array = operandStack.PopArray();
-                        if (array == null)
-                        {
-                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
-                            {
-                                return;
-                            }
-                        }
-                        operandStack.Push(array.Length);
-                        break;
-                    case Instruction.athrow:
-                        if(!TryThrow(operandStack.PopInstance()))
-                        {
+                            environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
                             return;
                         }
-                        break;
-
-                    case Instruction.checkcast:
-                        //not implemented but allowed in bytecode (just skiped)
-                        pc += 2;
-                        break;
-                    case Instruction.instanceof:
-                        throw new NotImplementedException("Instruction instanceof not implemeted!");
-                    case Instruction.monitorenter:
-                    case Instruction.monitorexit:
-                        throw new NotImplementedException("monitor instructions not implemnted!");
-                    case Instruction.wide:
-                        wasWideInstruction = true;
-                        break;
-                    case Instruction.breakpoint:
-                    case Instruction.impdep1:
-                    case Instruction.impdep2:
-                        throw new NotImplementedException(string.Format("Reserved instruction {0} is not implemented.", instruction.ToString()));
-                    default:
-                        throw new InvalidOperationException("Unknown instruction!");
-                }
+                    }
+                    operandStack.Push(CreateMultiArray(sizes, 0));
+                    return;
+                case Instruction.arraylength:
+                    array = operandStack.PopArray();
+                    if (array == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+                    operandStack.Push(array.Length);
+                    return;
+                case Instruction.athrow:
+                    instance = operandStack.PopInstance();
+                    if (instance == null)
+                    {
+                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        return;
+                    }
+                    environment.SignalException(instance);
+                    return;
+                
+                case Instruction.checkcast:
+                    //not implemented but allowed in bytecode (just skiped)
+                    pc += 2;
+                    return;
+                case Instruction.instanceof:
+                    throw new NotImplementedException("Instruction instanceof not implemeted!");
+                case Instruction.monitorenter:
+                case Instruction.monitorexit:
+                    throw new NotImplementedException("monitor instructions not implemnted!");
+                case Instruction.wide:
+                    wasWideInstruction = true;
+                    return;
+                case Instruction.breakpoint:
+                case Instruction.impdep1:
+                case Instruction.impdep2:
+                    throw new NotImplementedException(string.Format("Reserved instruction {0} is not implemented.", instruction.ToString()));
+                case Instruction.invokedynamic:
+                    throw new NotImplementedException("invokedynamic instruction is not supported.");
+                default:
+                    throw new InvalidOperationException("Unknown instruction!");
             }
         }
 
-
-        #region Ldc instructions
-        private void Ldc(byte[] code, int index)
-        {
-            object value = classObject.ConstantPool.GetItem<ValueConstantPoolItem>(index).GetValue();
-            if (value is string)
-            {
-                JavaInstance stringInstance = environment.CreateInstance(StringClass.Name);
-                stringInstance.Fields[0] = value;
-                operandStack.Push(stringInstance);
-            }
-            else
-            {
-                operandStack.Push(value);
-            }
-        }
-        #endregion
-
-        //TODO: check again if DUP implementations are correct...
         #region Dup instructions
 
         private void Dup()
@@ -1148,47 +1110,6 @@ namespace JVMdotNET.Core
 
             return parameters;
         }
-
-        #endregion
-
-        #region Throw instruction
-        private bool TryThrow(JavaInstance exception)
-        {
-            ExceptionTableEntry[] exceptionTable = codeInfo.ExceptionTable;
-
-            bool catched = false;
-            foreach (var entry in exceptionTable)
-            {
-                if (pc >= entry.StartPC && pc < entry.EndPC) //The  start_pc is inclusive and  end_pc is exclusive; See JVM 7 spec page 106
-                {
-                    if (entry.CatchTypeIndex == 0 || CheckExcteptionType(exception, entry.CatchTypeIndex))
-                    {
-                        operandStack.Clear();
-                        operandStack.Push(exception);
-                        pc = entry.HandlerPC;
-                        catched = true;
-                    }
-                }
-            }
-
-            if (!catched)
-            {
-                environment.PrepareExceptionHandling(exception);
-            }
-
-            return catched;
-        }
-
-        private bool CheckExcteptionType(JavaInstance exception, int catchTypeIndex)
-        {
-            var catchClass = environment.GetClass(classObject.ConstantPool.GetItem<ClassConstantPoolItem>(catchTypeIndex).Name);
-            if (exception.JavaClass.IsSubClassOf(catchClass))
-            {
-                return true;
-            }
-            return false;
-        }
-
 
         #endregion
 

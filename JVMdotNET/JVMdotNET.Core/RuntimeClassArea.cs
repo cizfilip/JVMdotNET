@@ -13,10 +13,12 @@ namespace JVMdotNET.Core
     {
         private IDictionary<string, JavaClass> classes;
 
+        private RuntimeEnvironment classInitializationEnvironment;
 
         public RuntimeClassArea()
         {
             this.classes = new Dictionary<string, JavaClass>();
+            this.classInitializationEnvironment = new RuntimeEnvironment(this);
         }
 
         public void LoadClassFile(string fileName)
@@ -28,7 +30,6 @@ namespace JVMdotNET.Core
                 newClass = loader.Load(reader);
             }
             
-            //TODO: spustit staticky constructor
             AddJavaClass(newClass);
         }
 
@@ -52,6 +53,39 @@ namespace JVMdotNET.Core
                 returnClass.Resolve(this);
             }
             return returnClass;
+        }
+
+        public void InitializeClass(JavaClass javaClass)
+        {
+            if (!javaClass.IsResolved)
+            {
+                throw new InvalidOperationException(string.Format("Class {0} initialization occurred before resolution!", javaClass.Name));
+            }
+
+            if (javaClass.IsInitialized)
+            {
+                return;
+            }
+
+            if (javaClass.SuperClass != null && !javaClass.SuperClass.IsInitialized)
+            {
+                InitializeClass(javaClass.SuperClass);
+            }
+
+            javaClass.IsInitialized = true;
+
+            MethodInfo classConstructor;
+            if (javaClass.TryGetClassConstructor(out classConstructor))
+            {
+                var exception = classInitializationEnvironment.ExecuteProgram(classConstructor);
+                if (exception != null)
+                {
+                    //TODO: propagate ExceptionInInitializerError to JVM
+                    throw new InvalidOperationException("ExceptionInInitializerError");
+                }
+            }
+
+            
         }
 
     }

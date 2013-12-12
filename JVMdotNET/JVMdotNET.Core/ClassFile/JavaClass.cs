@@ -12,9 +12,7 @@ namespace JVMdotNET.Core.ClassFile
     internal class JavaClass : AttributeContainer
     {
         public bool IsResolved { get; protected set; }
-
-        //TODO: static constructors.... maybe not this way
-        //public bool IsInitialized { get; set; }
+        public bool IsInitialized { get; set; }
 
         public VersionInfo Version { get; protected set; }
         public ConstantPoolItemBase[] ConstantPool { get; protected set; }
@@ -99,26 +97,31 @@ namespace JVMdotNET.Core.ClassFile
             }
         }
 
+        private void AddStaticFields(IEnumerable<StaticField> staticFields)
+        {
+            foreach (var staticField in staticFields)
+            {
+                if (!StaticFields.ContainsKey(staticField.Info.Name))
+                {
+                    StaticFields.Add(staticField.Info.Name, staticField);
+                }
+            }
+        }
+
         public void Resolve(RuntimeClassArea classArea)
         {
+            this.IsResolved = true;
+
             if (string.IsNullOrEmpty(Super))
             {
                 return;
             }
             
             SuperClass = classArea.GetClass(Super);
-            //TODO: mel bych resolvovat i static fieldy!!
+            AddStaticFields(SuperClass.StaticFields.Values);
             AddFields(SuperClass.InstanceFields.Values.Select(f => f.Info));
             AddVirtualMethods(SuperClass.Methods);
-            this.IsResolved = true;
         }
-
-        //public void Initialize(RuntimeEnvironment environment)
-        //{
-            
-
-        //    IsInitialized = true;
-        //}
 
         public object GetStaticFieldValue(string fieldName)
         {
@@ -157,15 +160,10 @@ namespace JVMdotNET.Core.ClassFile
             throw new MethodNotFoundException(string.Format("Method {0} not found in class {1}.", methodKey, Name));
         }
 
-        //TODO: static constructors.... maybe not this way
-        //public bool TryGetClassConstructor(out MethodInfo classConstructor)
-        //{
-        //    if (Methods.TryGetValue("<clinit>()V", out classConstructor))
-        //    {
-        //        return true;
-        //    }
-        //    return false;
-        //}
+        public bool TryGetClassConstructor(out MethodInfo classConstructor)
+        {
+            return Methods.TryGetValue("<clinit>()V", out classConstructor);
+        }
 
         public int GetInstanceFieldsCount()
         {

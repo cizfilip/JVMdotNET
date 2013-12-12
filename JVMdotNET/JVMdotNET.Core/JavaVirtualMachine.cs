@@ -36,8 +36,13 @@ namespace JVMdotNET.Core
             var javaClass = classArea.GetClass("Program");
             var mainMethod = javaClass.GetMethodInfo("main([Ljava/lang/String;)V");
 
-            environment.ExecuteProgram(mainMethod);
-            
+            var exception = environment.ExecuteProgram(mainMethod);
+
+            if (exception != null)
+            {
+                //TODO: lepsi handlovani konce s exception
+                throw new InvalidOperationException(string.Format("Java program ended with exception {0}", exception.JavaClass.Name));
+            }
         }
 
 

@@ -25,6 +25,18 @@ namespace JVMdotNET.Core.ClassFile
             }
         }
 
+        public bool TryGetAttribute<T>(string attributeName, out T returnAttribute) where T : Attributes.AttributeBase
+        {
+            AttributeBase attribute;
+            if (attributes != null && attributes.TryGetValue(attributeName, out attribute))
+            {
+                returnAttribute = (T)attribute;
+                return true;
+            }
+            returnAttribute = null;
+            return false;
+        }
+
 
         //private static readonly string[] ValidMethodAttributeNames = { 
         //                                                           CodeAttribute.Name,

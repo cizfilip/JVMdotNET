@@ -1,5 +1,7 @@
 ﻿using JVMdotNET.Core.ClassFile;
+using JVMdotNET.Core.ClassFile.Attributes;
 using JVMdotNET.Core.ClassFile.ConstantPool;
+using JVMdotNET.Core.ClassLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +14,45 @@ namespace JVMdotNET.Core
         private Stack<StackFrame> stack;
         private RuntimeClassArea classArea;
 
-        //exception for exception propagation
-        private JavaInstance exception;
+        private JavaInstance unhandledException;
 
         public RuntimeEnvironment(RuntimeClassArea classArea)
         {
             this.stack = new Stack<StackFrame>();
             this.classArea = classArea;
-            this.exception = null;
+            this.unhandledException = null;
         }
-        
+
+
+        public void LoadConstant(int constantPoolIndex)
+        {
+            var currentStackFrame = stack.Peek();
+
+            object value = currentStackFrame.ConstantPool.GetItem<ValueConstantPoolItem>(constantPoolIndex).GetValue();
+            if (value is string)
+            {
+                JavaInstance stringInstance = CreateJavaInstance(StringClass.Name);
+                stringInstance.Fields[0] = value;
+                currentStackFrame.PushToOperandStack(stringInstance);
+            }
+            else
+            {
+                currentStackFrame.PushToOperandStack(value);
+            }
+        }
+
+        public void CreateInstance(string className)
+        {
+            stack.Peek().PushToOperandStack(CreateJavaInstance(className));
+        }
+
+        private JavaInstance CreateJavaInstance(string className)
+        {
+            JavaClass @class = classArea.GetClass(className);
+            classArea.InitializeClass(@class);
+            return new JavaInstance(@class);
+        }
+
         public void PrepareReturn(object returnValue)
         {
             stack.Pop().Unload();
@@ -34,9 +65,15 @@ namespace JVMdotNET.Core
             stack.Pop().Unload();
         }
 
+
+        #region Method invocations
+        
         public void PrepareStaticMethodInvocation(object[] parameters, MethodRefConstantPoolItem methodRef)
         {
-            MethodInfo methodToRun = classArea.GetClass(methodRef.Class.Name).GetMethodInfo(methodRef);
+            JavaClass javaClass = classArea.GetClass(methodRef.Class.Name);
+            classArea.InitializeClass(javaClass);
+
+            MethodInfo methodToRun = javaClass.GetMethodInfo(methodRef);
 
             if (!methodToRun.AccessFlags.HasFlag(MethodAccessFlags.Static))
             {
@@ -89,69 +126,81 @@ namespace JVMdotNET.Core
             }
         }
 
+        #endregion
+
+        #region Exception handling
+
+        public void SignalException(string exceptionClassName)
+        {
+            SignalException(CreateJavaInstance(exceptionClassName));
+        }
         
-
-        public void PrepareExceptionHandling(JavaInstance exception)
+        public void SignalException(JavaInstance exception)
         {
+            this.unhandledException = exception;
+        }
+
+        private void HandleException()
+        {
+            var currentStackFrame = stack.Peek();
+
+            ExceptionTableEntry[] exceptionTable = currentStackFrame.ExceptionTable;
+            int pc = currentStackFrame.PC;
+
+            foreach (var entry in exceptionTable)
+            {
+                if (pc >= entry.StartPC && pc < entry.EndPC) //The  start_pc is inclusive and  end_pc is exclusive; See JVM 7 spec page 106
+                {
+                    if (entry.CatchTypeIndex == 0 || CheckExceptionType(currentStackFrame.ConstantPool.GetItem<ClassConstantPoolItem>(entry.CatchTypeIndex).Name))
+                    {
+                        currentStackFrame.ClearOperandStack();
+                        currentStackFrame.PushToOperandStack(unhandledException);
+                        currentStackFrame.PC = entry.HandlerPC;
+                        unhandledException = null;
+
+                    }
+                }
+            }
+
+            //propagate exception
             stack.Pop().Unload();
-            this.exception = exception;
         }
 
-        public void ExceptionHandled()
+        private bool CheckExceptionType(string catchClassName)
         {
-            this.exception = null;
+
+            var catchClass = classArea.GetClass(catchClassName);
+            if (unhandledException.JavaClass.IsSubClassOf(catchClass))
+            {
+                return true;
+            }
+            return false;
         }
-
-        public JavaInstance CreateInstance(string className)
-        {
-            JavaClass @class = classArea.GetClass(className);
-            
-            return new JavaInstance(@class);
-        }
-
-        public JavaClass GetClass(string className)
-        {
-            return classArea.GetClass(className);
-        }
-
-        //TODO: static constructors.... maybe not this way
-        //public bool EnsureClassInitialized(ClassConstantPoolItem classRef)
-        //{
-        //    var javaClass = classArea.GetClass(classRef.Name);
-        //    if (!javaClass.IsInitialized)
-        //    {
-        //        javaClass.IsInitialized = true;
-
-        //        MethodInfo classConstructor;
-        //        if (javaClass.TryGetClassConstructor(out classConstructor))
-        //        {
-        //            PrepareMethodInvocation(classConstructor, null, new object[0]);
-        //            return true;
-        //        }
-        //    }
-
-        //    return false;
-        //}
-
+        
+        #endregion
+               
         #region Fields Manipulation
         
-        public object GetStaticFieldValue(FieldRefConstantPoolItem fieldRef)
+        public void GetStaticFieldValue(FieldRefConstantPoolItem fieldRef)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
-            return javaClass.GetStaticFieldValue(fieldRef.NameAndType.Name);
+            classArea.InitializeClass(javaClass);
+            object value = javaClass.GetStaticFieldValue(fieldRef.NameAndType.Name);
+            stack.Peek().PushToOperandStack(value);
         }
 
         public void SetStaticFieldValue(FieldRefConstantPoolItem fieldRef, object value)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
+            classArea.InitializeClass(javaClass);
             javaClass.SetStaticFieldValue(fieldRef.NameAndType.Name, value);
         }
 
-        public object GetFieldValue(FieldRefConstantPoolItem fieldRef, JavaInstance instance)
+        public void GetFieldValue(FieldRefConstantPoolItem fieldRef, JavaInstance instance)
         {
             var javaClass = classArea.GetClass(fieldRef.Class.Name);
             int index = javaClass.GetInstanceFieldInfo(fieldRef.NameAndType.Name).Index;
-            return instance.Fields[index];
+            stack.Peek().PushToOperandStack(instance.Fields[index]);
         }
 
         public void SetFieldValue(FieldRefConstantPoolItem fieldRef, JavaInstance instance, object value)
@@ -163,25 +212,24 @@ namespace JVMdotNET.Core
 
         #endregion
 
-        public void ExecuteProgram(MethodInfo mainMethod)
+        public JavaInstance ExecuteProgram(MethodInfo mainMethod)
         {
-            StackFrame newFrame = new StackFrame(mainMethod, this);
-            stack.Push(newFrame);
+            PrepareMethodInvocation(mainMethod, null, new object[0]);
 
             Run();
 
-            if (exception != null)
-            {
-                //TODO: lepsi handlovani konce s exception
-                throw new InvalidOperationException(string.Format("Java program ended with exception {0}", exception.JavaClass.Name));
-            }
+            return unhandledException;
         }
 
         private void Run()
         {
             while (!stack.IsEmpty())
             {
-                stack.Peek().Run(exception);
+                stack.Peek().Run();
+                if (unhandledException != null)
+                {
+                    HandleException();
+                }
             }
         }
     }
