@@ -33,26 +33,60 @@ namespace JVMdotNET.Core
 
         public void PrepareStaticMethodInvocation(object[] parameters, MethodRefConstantPoolItem methodRef)
         {
-            JavaClass classToRun = classArea.GetClass(methodRef.Class.Name);
-            MethodInfo methodToRun = classToRun.GetMethodInfo(methodRef.NameAndType.Name);
+            MethodInfo methodToRun = classArea.GetClass(methodRef.Class.Name).GetMethodInfo(methodRef);
 
-            //TODO: check zda je metoda fakt staticka??
+            if (!methodToRun.AccessFlags.HasFlag(MethodAccessFlags.Static))
+            {
+                throw new InvalidOperationException(string.Format("Method {0} on class {1} was caled using invokestatic, but it is not static method!", methodToRun.Name, methodToRun.Class.Name));
+            }
 
-            StackFrame newFrame = new StackFrame(classToRun, methodToRun);
-            newFrame.InitLocals(null, parameters);
-            stack.Push(newFrame);
+            if (methodToRun.IsInitializationMethod)
+            {
+                throw new InvalidOperationException(string.Format("Method {0} on class {1} was caled using invokestatic, but it is an initialization method!", methodToRun.Name, methodToRun.Class.Name));
+            }
+
+            PrepareMethodInvocation(methodToRun, null, parameters);
         }
 
-        public void PrepareVirtualMethodInvocation(JavaInstance instance, object[] parameters, MethodRefConstantPoolItem methodRef)
+        public void PrepareVirtualOrInterfaceMethodInvocation(JavaInstance instance, object[] parameters, MethodRefConstantPoolItem methodRef)
         {
-            JavaClass classToRun = classArea.GetClass(methodRef.Class.Name);
-            MethodInfo methodToRun = instance.JavaClass.GetMethodInfo(methodRef.NameAndType.Name);
+            MethodInfo methodToRun = instance.JavaClass.GetMethodInfo(methodRef);
 
-            StackFrame newFrame = new StackFrame(classToRun, methodToRun);
-            newFrame.InitLocals(instance, parameters);
-            stack.Push(newFrame);
+            if (methodToRun.IsInitializationMethod)
+            {
+                throw new InvalidOperationException(string.Format("Method {0} on class {1} was caled using invokevirtual, but it is an initialization method!", methodToRun.Name, methodToRun.Class.Name));
+            }
+
+            PrepareMethodInvocation(methodToRun, instance, parameters);
         }
 
+        public void PrepareSpecialMethodInvocation(JavaInstance instance, object[] parameters, MethodRefConstantPoolItem methodRef)
+        {
+            MethodInfo methodToRun = classArea.GetClass(methodRef.Class.Name).GetMethodInfo(methodRef);
+
+            PrepareMethodInvocation(methodToRun, instance, parameters);
+        }
+
+        private void PrepareMethodInvocation(MethodInfo methodToRun, JavaInstance instance, object[] parameters)
+        {
+            if (methodToRun.IsNative)
+            {
+                NativeMethodInfo nativeMethod = (NativeMethodInfo)methodToRun;
+                object returnValue = nativeMethod.Implementation(instance, parameters, this);
+                if (returnValue != null)
+                {
+                    stack.Peek().PushToOperandStack(returnValue);
+                }
+            }
+            else
+            {
+                StackFrame newFrame = new StackFrame(methodToRun);
+                newFrame.InitLocals(instance, parameters);
+                stack.Push(newFrame);
+            }
+        }
+
+        
 
         public void PrepareExceptionHandling()
         {
@@ -98,9 +132,9 @@ namespace JVMdotNET.Core
 
         #endregion
 
-        public void ExecuteProgram(JavaClass @class, MethodInfo mainMethod)
+        public void ExecuteProgram(MethodInfo mainMethod)
         {
-            StackFrame newFrame = new StackFrame(@class, mainMethod);
+            StackFrame newFrame = new StackFrame(mainMethod);
             stack.Push(newFrame);
 
             Run();

@@ -9,7 +9,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
     {
         public abstract object GetValue();
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             //noop
         }

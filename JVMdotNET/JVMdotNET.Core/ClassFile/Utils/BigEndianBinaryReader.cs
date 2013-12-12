@@ -97,7 +97,7 @@ namespace JVMdotNET.Core.ClassFile.Utils
         public override string ReadString()
         {
             int len = ReadUInt16();
-            byte[] buf = new byte[len];
+            byte[] buf = base.ReadBytes(len);
             int pos = 0;
             
             // special code path for ASCII strings (which occur *very* frequently)

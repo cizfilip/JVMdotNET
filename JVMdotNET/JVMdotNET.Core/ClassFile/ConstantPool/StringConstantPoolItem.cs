@@ -14,7 +14,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.stringIndex = stringIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             this.Value = constantPool.GetItem<Utf8ConstantPoolItem>(stringIndex).String;
         }

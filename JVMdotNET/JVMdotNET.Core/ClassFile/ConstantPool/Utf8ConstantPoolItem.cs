@@ -19,7 +19,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             get { return ConstantPoolItemType.Utf8; }
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             //noop
         }

@@ -16,10 +16,9 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.referenceIndex = referenceIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
-            //TODO: implement this
-            throw new NotImplementedException();
+            //method handle not supported
         }
 
         public override ConstantPoolItemType Type

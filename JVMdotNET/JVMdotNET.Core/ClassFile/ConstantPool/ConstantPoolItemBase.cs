@@ -10,19 +10,19 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
     internal abstract class ConstantPoolItemBase
     {
         protected bool isResolved = false;
-        //TODO: typ nejspis odstranit.... pokud se neukaze ze bude nekde potreba
+
         public abstract ConstantPoolItemType Type { get; }
         
 
-        public void Resolve(ConstantPoolItemBase[] constantPool, int index)
+        public void Resolve(ConstantPoolItemBase[] constantPool)
         {
             if (!isResolved)
             {
-                ResolveInternal(constantPool, index);
+                ResolveInternal(constantPool);
             }
         }
 
-        protected abstract void ResolveInternal(ConstantPoolItemBase[] constantPool, int index);
+        protected abstract void ResolveInternal(ConstantPoolItemBase[] constantPool);
     }
 
 

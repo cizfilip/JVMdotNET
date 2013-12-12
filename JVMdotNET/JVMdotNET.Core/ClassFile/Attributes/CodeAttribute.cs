@@ -5,15 +5,8 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.Attributes
 {
-    internal class CodeAttribute : AttributeBase, IAttributteContainer
+    internal class CodeAttribute : AttributeBase
     {
-        private static readonly string[] ValidAttributeNames = { 
-                                                                   LineNumberTableAttribute.Name,
-                                                                   LocalVariableTableAttribute.Name, 
-                                                                   LocalVariableTypeTableAttribute.Name,
-                                                                   StackMapTableAttribute.Name
-                                                               };
-
         internal const string Name = "Code";
 
         public IDictionary<string, AttributeBase> Attributes { get; private set; }
@@ -33,17 +26,6 @@ namespace JVMdotNET.Core.ClassFile.Attributes
             this.Code = code;
             this.ExceptionTable = exceptionTable;
             this.Attributes = attributes;
-        }
-
-
-        public string[] ValidAttributes
-        {
-            get { return ValidAttributeNames; }
-        }
-
-        public T GetAttribute<T>(string attributeName) where T : AttributeBase
-        {
-            throw new NotImplementedException();
         }
     }
 

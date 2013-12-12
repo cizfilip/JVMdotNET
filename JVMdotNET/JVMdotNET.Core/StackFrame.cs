@@ -20,15 +20,14 @@ namespace JVMdotNET.Core
         private JavaClass classObject;
         private MethodInfo method;
 
-        public StackFrame(JavaClass @class, MethodInfo method)
+        public StackFrame(MethodInfo method)
         {
             this.pc = 0;
-            this.wasWideInstruction = true;
-            this.classObject = @class;
+            this.wasWideInstruction = false;
+            this.classObject = method.Class;
             this.method = method;
 
             var code = method.Code;
-
 
             this.locals = new object[code.MaxLocals];
             this.operandStack = new Stack<object>(code.MaxStack);
@@ -36,7 +35,6 @@ namespace JVMdotNET.Core
 
         public void Unload()
         {
-            //TODO: What is really needed??
             this.locals = null;
             this.operandStack = null;
             this.classObject = null;
@@ -634,16 +632,18 @@ namespace JVMdotNET.Core
 
                     case Instruction.invokestatic:
                         InvokeStatic(code, environment);
-                        break;
+                        return;
                     case Instruction.invokevirtual:
-                        InvokeVirtual(code, environment);
+                        InvokeMethod(code, environment.PrepareVirtualOrInterfaceMethodInvocation);
+                        return;
+                    case Instruction.invokespecial:
+                        InvokeMethod(code, environment.PrepareSpecialMethodInvocation);
+                        return;
+                    case Instruction.invokeinterface:
+                        InvokeMethod(code, environment.PrepareVirtualOrInterfaceMethodInvocation);
+                        pc += 2; //Skip count and 0 parameters 
                         return;
 
-                    case Instruction.invokespecial:
-                        break;
-                    
-                    case Instruction.invokeinterface:
-                        break;
                     case Instruction.invokedynamic:
                         throw new NotImplementedException("invokedynamic instruction is not supported.");
 
@@ -691,8 +691,7 @@ namespace JVMdotNET.Core
                     case Instruction.impdep2:
                         throw new NotImplementedException(string.Format("Reserved instruction {0} is not implemented.", instruction.ToString()));
                     default:
-                        //TODO: throw unknown instruction;
-                        break;
+                        throw new InvalidOperationException("Unknown instruction!");
                 }
             }
         }
@@ -774,7 +773,7 @@ namespace JVMdotNET.Core
             {
                 object value3 = operandStack.Pop();
                 if (value3.IsCategory2Type())
-                {//FORM #
+                {//FORM 3
                     operandStack.PushMany(value2, value1, value3, value2, value1);
                 }
                 else
@@ -1010,6 +1009,20 @@ namespace JVMdotNET.Core
         #endregion
 
         #region Invoke instructions
+
+        private void InvokeMethod(byte[] code, Action<JavaInstance, object[], MethodRefConstantPoolItem> environmentCall)
+        {
+            var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+            var parameters = ExtractParameters(methodRef);
+
+            var instance = operandStack.PopInstance();
+            if (instance == null)
+            {
+                //TODO: throw NullPointerException
+            }
+
+            environmentCall(instance, parameters, methodRef);
+        }
         
         private void InvokeStatic(byte[] code, RuntimeEnvironment environment)
         {
@@ -1019,21 +1032,12 @@ namespace JVMdotNET.Core
             environment.PrepareStaticMethodInvocation(parameters, methodRef);
         }
 
-        private void InvokeVirtual(byte[] code, RuntimeEnvironment environment)
-        {
-            var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
-            var parameters = ExtractParameters(methodRef);
-
-            environment.PrepareVirtualMethodInvocation(operandStack.PopInstance(), parameters, methodRef);
-        }
-
-
         private object[] ExtractParameters(MethodRefConstantPoolItem methodRef)
         {
             int parametersCount = methodRef.Signature.ParametersCount;
             object[] parameters = new object[parametersCount];
 
-            for (int i = 0; i < parametersCount; i++)
+            for (int i = parametersCount - 1; i >= 0; i--)
             {
                 parameters[i] = operandStack.Pop();
             }

@@ -16,5 +16,8 @@ namespace JVMdotNET.Core.ClassFile
 
         public uint MajorVersion { get; private set; }
         public uint MinorVersion { get; private set; }
+
+        public static readonly VersionInfo Java70 = new VersionInfo(51, 0);
+        
     }
 }

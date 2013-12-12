@@ -52,5 +52,6 @@ namespace JVMdotNET.Core
             }
             return returnClass;
         }
+
     }
 }

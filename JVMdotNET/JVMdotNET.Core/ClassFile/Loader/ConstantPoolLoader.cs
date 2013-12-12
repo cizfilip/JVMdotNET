@@ -30,7 +30,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
                 var item = constantPool[i];
                 if (item != null)
                 {
-                    item.Resolve(constantPool, i);
+                    item.Resolve(constantPool);
                 }
             }
 
@@ -68,7 +68,8 @@ namespace JVMdotNET.Core.ClassFile.Loader
                     return new NameAndTypeConstantPoolItem(reader.ReadUInt16(), reader.ReadUInt16());
                 case ConstantPoolItemType.Utf8:
                     return new Utf8ConstantPoolItem(reader.ReadString());
-                // Vše níž až od major version 51
+                
+                // All remaining items is loaded into constant pool, but not resolved and not used/supported in rest of this JVM implementation
                 case ConstantPoolItemType.MethodHandle:
                     return new MethodHandleConstantPoolItem(reader.ReadByte(), reader.ReadUInt16());
                 case ConstantPoolItemType.MethodType:

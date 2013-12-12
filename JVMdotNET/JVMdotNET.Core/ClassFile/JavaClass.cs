@@ -1,5 +1,6 @@
 ﻿using JVMdotNET.Core.ClassFile.Attributes;
 using JVMdotNET.Core.ClassFile.ConstantPool;
+using JVMdotNET.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,38 +9,43 @@ using System.Threading.Tasks;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    internal class JavaClass : IAttributteContainer
+    internal class JavaClass : AttributeContainer
     {
-        private static readonly string[] ValidAttributeNames = { 
-                                                                   InnerClassesAttribute.Name,
-                                                                   EnclosingMethodAttribute.Name, 
-                                                                   SyntheticAttribute.Name,
-                                                                   SignatureAttribute.Name,
-                                                                   SourceFileAttribute.Name,
-                                                                   SourceDebugExtensionAttribute.Name,
-                                                                   DeprecatedAttribute.Name,
-                                                                   RuntimeVisibleAnnotationsAttribute.Name,
-                                                                   RuntimeInvisibleAnnotationsAttribute.Name,
-                                                                   BootstrapMethodsAttribute.Name
-                                                               };
+        public bool IsResolved { get; protected set; }
+        public VersionInfo Version { get; protected set; }
+        public ConstantPoolItemBase[] ConstantPool { get; protected set; }
+        public ClassAccessFlags AccessFlags { get; protected set; }
+        public string Name { get; protected set; }
+        public string Super { get; protected set; }
+        public JavaClass SuperClass { get; protected set; }
+        public string[] Interfaces { get; protected set; }
 
-        public bool IsResolved { get; private set; }
-        public VersionInfo Version { get; private set; }
-        public ConstantPoolItemBase[] ConstantPool { get; private set; }
-        public ClassAccessFlags AccessFlags { get; private set; }
-        public string Name { get; private set; }
-        public string Super { get; private set; }
-        public JavaClass SuperClass { get; private set; }
-        public string[] Interfaces { get; private set; }
-        public IDictionary<string, StaticField> StaticFields { get; private set; }
-        public IDictionary<string, InstanceField> InstanceFields { get; private set; }
-        public IDictionary<string, MethodInfo> Methods { get; private set; }
-        public IDictionary<string, AttributeBase> Attributes { get; private set; }
+        protected IDictionary<string, StaticField> StaticFields { get; set; }
+        protected IDictionary<string, InstanceField> InstanceFields { get; set; }
+        protected IDictionary<string, MethodInfo> Methods { get; set; } // key is Name + Descriptor
+
+        public IDictionary<string, AttributeBase> Attributes
+        {
+            set
+            {
+                base.attributes = value;
+            }
+        }
+
+        //For Library classes
+        protected JavaClass() 
+        {
+            this.Methods = new Dictionary<string, MethodInfo>();
+            this.InstanceFields = new Dictionary<string, InstanceField>();
+            this.StaticFields = new Dictionary<string, StaticField>();
+
+            this.IsResolved = false;
+        }
 
         public JavaClass(VersionInfo version, ConstantPoolItemBase[] constantPool, 
             ClassAccessFlags accessFlags, string name, string super,
-            string[] interfaces, FieldInfo[] fields, MethodInfo[] methods,
-            IDictionary<string, AttributeBase> attributes)
+            string[] interfaces)
+            : this()
         {
             this.Version = version;
             this.ConstantPool = constantPool;
@@ -47,22 +53,13 @@ namespace JVMdotNET.Core.ClassFile
             this.Name = name;
             this.Super = super;
             this.Interfaces = interfaces;
-            this.Attributes = attributes;
-            this.IsResolved = false;
-
-            this.Methods = new Dictionary<string, MethodInfo>();
-            this.InstanceFields = new Dictionary<string, InstanceField>();
-            this.StaticFields = new Dictionary<string, StaticField>();
-
-            LoadFields(fields);
-            LoadMethods(methods);
         }
 
-        private void LoadMethods(MethodInfo[] methods)
+        internal void AddMethods(MethodInfo[] methods)
         {
             foreach (var method in methods)
             {
-                Methods.Add(method.Name, method);
+                Methods.Add(method.Key, method);
             }
         }
 
@@ -70,14 +67,16 @@ namespace JVMdotNET.Core.ClassFile
         {
             foreach (var method in superMethods.Values)
             {
-                if (!Methods.ContainsKey(method.Name) && (method.AccessFlags.HasFlag(MethodAccessFlags.Public) || (method.AccessFlags.HasFlag(MethodAccessFlags.Protected))))
+                if (!Methods.ContainsKey(method.Key) && 
+                    (method.AccessFlags.HasFlag(MethodAccessFlags.Public) || 
+                     method.AccessFlags.HasFlag(MethodAccessFlags.Protected)))
                 {
-                    Methods.Add(method.Name, method);
+                    Methods.Add(method.Key, method);
                 }
             }
         }
 
-        private void LoadFields(IEnumerable<FieldInfo> fields)
+        internal void AddFields(IEnumerable<FieldInfo> fields)
         {
             int instanceFieldsLength = InstanceFields.Count;
             int i = 0;
@@ -98,57 +97,72 @@ namespace JVMdotNET.Core.ClassFile
 
         public void Resolve(RuntimeClassArea classArea)
         {
-            if (IsResolved)
+            if (string.IsNullOrEmpty(Super))
             {
                 return;
             }
             
             SuperClass = classArea.GetClass(Super);
-            LoadFields(SuperClass.InstanceFields.Values.Select(f => f.Info));
+            AddFields(SuperClass.InstanceFields.Values.Select(f => f.Info));
             AddVirtualMethods(SuperClass.Methods);
             this.IsResolved = true;
         }
 
         public object GetStaticFieldValue(string fieldName)
         {
-            //TODO: co kdyz field neexistuje
-            return StaticFields[fieldName].Value;
+            return GetStaticField(fieldName).Value;
         }
 
         public void SetStaticFieldValue(string fieldName, object value)
         {
-            //TODO: co kdyz field neexistuje
-            StaticFields[fieldName].Value = value;
+            GetStaticField(fieldName).Value = value;
         }
 
         public InstanceField GetInstanceFieldInfo(string fieldName)
         {
-            //TODO: co kdyz field neexistuje
-            return InstanceFields[fieldName];
-        }
-
-        public MethodInfo GetMethodInfo(string methodName)
-        {
-            //TODO: co kdyz metoda neexistuje
-            return Methods[methodName];
-        }
-
-        public string[] ValidAttributes
-        {
-            get { return ValidAttributeNames; }
-        }
-
-        public T GetAttribute<T>(string attributeName) where T : Attributes.AttributeBase
-        {
-            AttributeBase attribute;
-            if (Attributes.TryGetValue(attributeName, out attribute))
+            InstanceField field;
+            if (InstanceFields.TryGetValue(fieldName, out field))
             {
-                return (T)attribute;
+                return field;
             }
-            else
-            {
-                throw new InvalidOperationException(string.Format("Attribute with name {0} not found in class item {1}.", attributeName, Name));
-            }
+
+            throw new FieldNotFoundException(string.Format("Instance field {0} not found in class {1}.", fieldName, Name));
         }
+
+        public MethodInfo GetMethodInfo(MethodRefConstantPoolItem methodRef)
+        {
+            return GetMethodInfo(methodRef.Key);
+        }
+
+        public MethodInfo GetMethodInfo(string methodKey)
+        {
+            MethodInfo method;
+            if (Methods.TryGetValue(methodKey, out method))
+            {
+                return method;
+            }
+
+            throw new MethodNotFoundException(string.Format("Method {0} not found in class {1}.", methodKey, Name));
+        }
+
+        public int GetInstanceFieldsCount()
+        {
+            return InstanceFields.Count;
+        }
+               
+
+
+        private StaticField GetStaticField(string fieldName)
+        {
+            StaticField field;
+            if (StaticFields.TryGetValue(fieldName, out field))
+            {
+                return field;
+            }
+
+            throw new FieldNotFoundException(string.Format("Static field {0} not found in class {1}.", fieldName, Name));
+        }
+
+       
     }
 }

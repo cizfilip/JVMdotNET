@@ -71,7 +71,6 @@ namespace JVMdotNET.Core.ClassFile.Loader
                 case AnnotationDefaultAttribute.Name: //Java annotations not supported...
                 case BootstrapMethodsAttribute.Name: //Not supported - needed only for invokedynamic...
                 default:
-                    //TODO: silent ignore (but log)
                     //skip length of the attribute
                     SkipAttribute(reader, attributeLength);
                     break;
@@ -148,12 +147,7 @@ namespace JVMdotNET.Core.ClassFile.Loader
         private AttributeBase LoadInnerClasses(BigEndianBinaryReader reader, int attributeLength)
         {
             int numberOfClasses = reader.ReadUInt16();
-            //TODO: Validace delky attributu vsude i u promennych delek
-            //if (this.MajorVersion >= 49 && attribute_length != 2 + count * (2 + 2 + 2 + 2))
-            //{
-            //    throw new ClassFormatError("{0} (InnerClasses attribute has incorrect length)", this.Name);
-            //}
-
+            
             var innerClasses = new InnerClass[numberOfClasses];
             for (int i = 0; i < numberOfClasses; i++)
             {

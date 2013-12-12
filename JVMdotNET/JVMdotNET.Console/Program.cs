@@ -2,6 +2,7 @@
 using JVMdotNET.Core.ClassFile.Signature;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,9 +14,17 @@ namespace JVMdotNET.ConsoleRunner
     {
         static void Main(string[] args)
         {
-            var jvm = new JavaVirtualMachine(args);
+            string debugPath = @"C:\\Users\\Filip\\SkyDrive\\Eclipse\\Pokusy\\bin";
 
-            
+            List<string> classFiles = new List<string>();
+            classFiles.Add(Path.Combine(debugPath, "Program.class"));
+            classFiles.Add(Path.Combine(debugPath, "Pokus.class"));
+            classFiles.Add(Path.Combine(debugPath, "PokusChild.class"));
+
+
+            var jvm = new JavaVirtualMachine(classFiles.ToArray());
+
+            jvm.Run();
 
 
             Console.ReadKey();

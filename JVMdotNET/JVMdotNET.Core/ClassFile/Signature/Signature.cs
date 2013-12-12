@@ -76,6 +76,7 @@ namespace JVMdotNET.Core.ClassFile.Signature
                         nameBuilder.Append(descriptorPart[startIndex]);
                         startIndex++;
                     }
+                    startIndex++;
                     return new ObjectTypeInfo(JVMType.Object, nameBuilder.ToString());
                 case '[':
                     int dimensions = 1;

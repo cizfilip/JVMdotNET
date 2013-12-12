@@ -6,30 +6,18 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile
 {
-    internal abstract class ClassItemInfo : IAttributteContainer
+    internal abstract class ClassItemInfo : AttributeContainer
     {
         public string Name { get; private set; }
-        public IDictionary<string, AttributeBase> Attributes { get; private set; }
+        public string Descriptor { get; private set; }
+        public JavaClass Class { get; private set; }
 
-        public ClassItemInfo(string name, IDictionary<string, AttributeBase> attributes)
+        public ClassItemInfo(JavaClass @class, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
         {
+            this.Class = @class;
             this.Name = name;
-            this.Attributes = attributes;
-        }
-
-        public abstract string[] ValidAttributes { get; }
-
-        public T GetAttribute<T>(string attributeName) where T : AttributeBase
-        {
-            AttributeBase attribute;
-            if (Attributes.TryGetValue(attributeName, out attribute))
-            {
-                return (T)attribute;
-            }
-            else
-            {
-                throw new InvalidOperationException(string.Format("Attribute with name {0} not found in class item {1}.", attributeName, Name));
-            }
+            this.Descriptor = descriptor;
+            base.attributes = attributes;
         }
     }
 }

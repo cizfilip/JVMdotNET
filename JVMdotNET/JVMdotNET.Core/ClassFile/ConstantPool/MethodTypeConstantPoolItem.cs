@@ -16,8 +16,9 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.descriptorIndex = descriptorIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
+            //Method type is resolved here but not suported in this JVM.
             this.MethodDescriptor = constantPool.GetItem<Utf8ConstantPoolItem>(descriptorIndex).String;
         }
 

@@ -20,7 +20,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.nameAndTypeIndex = nameAndTypeIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             this.Class = constantPool.GetItem<ClassConstantPoolItem>(classIndex);
             

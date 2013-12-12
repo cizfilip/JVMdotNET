@@ -9,31 +9,19 @@ namespace JVMdotNET.Core.ClassFile
 {
     internal class MethodInfo : ClassItemInfo
     {
-        private static readonly string[] ValidAttributeNames = { 
-                                                                   CodeAttribute.Name,
-                                                                   SyntheticAttribute.Name, 
-                                                                   SignatureAttribute.Name,
-                                                                   DeprecatedAttribute.Name,
-                                                                   RuntimeVisibleAnnotationsAttribute.Name,
-                                                                   RuntimeInvisibleAnnotationsAttribute.Name,
-                                                                   RuntimeVisibleParameterAnnotationsAttribute.Name,
-                                                                   RuntimeInvisibleParameterAnnotationsAttribute.Name,
-                                                                   AnnotationDefaultAttribute.Name
-
-                                                               };
-
         public MethodAccessFlags AccessFlags { get; private set; }
         public MethodSignature Signature { get; private set; }
+        public string Key { get; private set; }
         
-
-        public MethodInfo(MethodAccessFlags accessFlags, string name, MethodSignature signature, IDictionary<string, AttributeBase> attributes)
-            : base(name, attributes)
+        public MethodInfo(JavaClass @class, MethodAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
+            : base(@class, name, descriptor, attributes)
         {
             this.AccessFlags = accessFlags;
-            this.Signature = signature;
+            this.Signature = JVMdotNET.Core.ClassFile.Signature.Signature.ParseMethodSignature(descriptor);
+            this.Key = Name + Descriptor;
         }
-        
-        public bool IsSpecialMethod
+
+        public bool IsInitializationMethod
         {
             get
             {
@@ -41,9 +29,12 @@ namespace JVMdotNET.Core.ClassFile
             }
         }
 
-        public override string[] ValidAttributes
+        public bool IsNative
         {
-            get { return ValidAttributeNames; }
+            get
+            {
+                return AccessFlags.HasFlag(MethodAccessFlags.Native);
+            }
         }
 
         public CodeAttribute Code

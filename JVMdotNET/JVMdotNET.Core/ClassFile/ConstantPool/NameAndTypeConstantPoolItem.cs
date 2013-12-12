@@ -19,7 +19,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.descriptorIndex = descriptorIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             this.Name = constantPool.GetItem<Utf8ConstantPoolItem>(nameIndex).String;
             this.Descriptor = constantPool.GetItem<Utf8ConstantPoolItem>(descriptorIndex).String;

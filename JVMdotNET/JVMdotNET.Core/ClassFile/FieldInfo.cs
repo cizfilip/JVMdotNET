@@ -10,30 +10,16 @@ namespace JVMdotNET.Core.ClassFile
 {
     internal class FieldInfo : ClassItemInfo
     {
-        private static readonly string[] ValidAttributeNames = { 
-                                                                   ConstantValueAttribute.Name,
-                                                                   SyntheticAttribute.Name, 
-                                                                   SignatureAttribute.Name,
-                                                                   DeprecatedAttribute.Name,
-                                                                   RuntimeVisibleAnnotationsAttribute.Name,
-                                                                   RuntimeInvisibleAnnotationsAttribute.Name
-                                                               };
-
         public FieldAccessFlags AccessFlags { get; private set; }
         public FieldSignature Signature { get; private set; }
         
 
-        public FieldInfo(FieldAccessFlags accessFlags, string name, FieldSignature signature, IDictionary<string, AttributeBase> attributes)
-            : base(name, attributes)
+        public FieldInfo(JavaClass @class, FieldAccessFlags accessFlags, string name, string descriptor, IDictionary<string, AttributeBase> attributes)
+            : base(@class, name, descriptor, attributes)
         {
             this.AccessFlags = accessFlags;
-            this.Signature = signature;
+            this.Signature = JVMdotNET.Core.ClassFile.Signature.Signature.ParseFieldSignature(descriptor);
         }
-
-        public override string[] ValidAttributes
-        {
-            get { return ValidAttributeNames; }
-        }
-
+        
     }
 }

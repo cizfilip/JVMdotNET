@@ -13,9 +13,11 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
         public FieldSignature Signature { get; set; }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
-            base.ResolveInternal(constantPool, index);
+            base.ResolveInternal(constantPool);
+
+            NameAndType.Resolve(constantPool);
 
             this.Signature = JVMdotNET.Core.ClassFile.Signature.Signature.ParseFieldSignature(NameAndType.Descriptor);
         }

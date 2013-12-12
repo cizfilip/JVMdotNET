@@ -19,7 +19,6 @@ namespace JVMdotNET.Core.ClassFile
         Varargs = 0x0080, //Declared with variable number of arguments.
         Native = 0x0100, //Declared native; implemented in a language other than Java.
         Abstract = 0x0400, //Declared  abstract;  no  implementation  is provided.
-        //TODO: strict floating point mode - nejspise nebude implementovan ale jeste promyslet
         Strict = 0x0800, //Declared strictfp; floating-point mode is FP-strict.
         Synthetic = 0x1000 //Declared synthetic; not present in the source code.
     }

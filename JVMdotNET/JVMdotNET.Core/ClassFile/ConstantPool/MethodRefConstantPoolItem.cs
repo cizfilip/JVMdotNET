@@ -12,10 +12,15 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             : base(classIndex, nameAndTypeIndex) { }
 
         public MethodSignature Signature { get; private set; }
+        public string Key { get; private set; }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
-            base.ResolveInternal(constantPool, index);
+            base.ResolveInternal(constantPool);
+
+            NameAndType.Resolve(constantPool);
+
+            this.Key = NameAndType.Name + NameAndType.Descriptor;
 
             this.Signature = JVMdotNET.Core.ClassFile.Signature.Signature.ParseMethodSignature(NameAndType.Descriptor);
         }

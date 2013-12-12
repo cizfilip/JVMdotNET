@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    //TODO: souvisi s instrukci invokedynamic kterou nemusim implementovat, jelikoz java compiler ji nikdy nevygeneruje, v JVM je jen pro podporu dynamickych jazyku
+    //Only for future extensions of this JVM. Currently invokedynamic not supported => This constant pool item is not resolved
     internal class InvokeDynamicConstantPoolItem : ConstantPoolItemBase
     {
         private int bootstrapMethodIndex;
@@ -17,10 +17,10 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.nameAndTypeIndex = nameAndTypeIndex;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             //noop
-            //not implemented because Java compiler language
+            //not implemented, invokedynamic not suported
         }
 
         public override ConstantPoolItemType Type

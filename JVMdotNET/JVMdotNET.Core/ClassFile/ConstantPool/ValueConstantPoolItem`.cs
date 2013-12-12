@@ -15,7 +15,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
             this.Value = value;
         }
 
-        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool, int index)
+        protected override void ResolveInternal(ConstantPoolItemBase[] constantPool)
         {
             
         }
