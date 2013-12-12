@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JVMdotNET.Core.ClassFile.ConstantPool
 {
-    internal class InterfaceMethodRefConstantPoolItem : RefConstantPoolItem
+    internal class InterfaceMethodRefConstantPoolItem : MethodRefConstantPoolItem
     {
         public InterfaceMethodRefConstantPoolItem(int classIndex, int nameAndTypeIndex)
             : base(classIndex, nameAndTypeIndex) { }

@@ -39,7 +39,7 @@ namespace JVMdotNET.Core.ClassFile.ConstantPool
 
             if (result == null)
             {
-                throw new ClassFileFormatException(string.Format("Invalid constant pool item at {0}.", index));
+                throw new ClassFileFormatException(string.Format("Invalid constant pool item at {0}, expected {1} but item is actually {2}.", index, typeof(T).Name, constantPool[index].GetType().Name));
             }
 
             return result;

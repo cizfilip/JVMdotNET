@@ -8,10 +8,13 @@ namespace JVMdotNET.Core.ClassLibrary
 {
     internal sealed class ObjectClass : LibraryClass
     {
+        public static readonly string Name = "java/lang/Object";
+
         public ObjectClass() 
             : base(
-                "java/lang/Object",
-                ClassAccessFlags.Public | ClassAccessFlags.Super
+                Name,
+                ClassAccessFlags.Public | ClassAccessFlags.Super,
+                null
             ) 
         {
             //Constructor

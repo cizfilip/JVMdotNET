@@ -103,12 +103,14 @@
     <Compile Include="ClassFile\ConstantPool\ConstantPoolItemBase.cs" />
     <Compile Include="ClassFile\VersionInfo.cs" />
     <Compile Include="ClassLibrary\ClassDefaults.cs" />
+    <Compile Include="ClassLibrary\Exceptions\ExceptionClassNames.cs" />
     <Compile Include="ClassLibrary\LibraryClass.cs" />
     <Compile Include="ClassLibrary\ObjectClass.cs" />
     <Compile Include="ClassLibrary\StringClass.cs" />
     <Compile Include="Exceptions\AttributeNotFoundException.cs" />
     <Compile Include="Exceptions\ClassFileFormatException.cs" />
     <Compile Include="ClassFile\InstanceField.cs" />
+    <Compile Include="Exceptions\ClassNotFoundException.cs" />
     <Compile Include="Exceptions\FieldNotFoundException.cs" />
     <Compile Include="Exceptions\MethodNotFoundException.cs" />
     <Compile Include="JavaInstance.cs" />

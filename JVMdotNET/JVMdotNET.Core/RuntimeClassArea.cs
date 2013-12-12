@@ -1,5 +1,6 @@
 ﻿using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Loader;
+using JVMdotNET.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -44,7 +45,7 @@ namespace JVMdotNET.Core
             JavaClass returnClass;
             if (!classes.TryGetValue(className, out returnClass))
             {
-                throw new InvalidOperationException(string.Format("Java class {0} not loaded!"));
+                throw new ClassNotFoundException(string.Format("Java class {0} not loaded!", className));
             }
             if (!returnClass.IsResolved)
             {

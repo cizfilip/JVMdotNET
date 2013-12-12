@@ -20,6 +20,7 @@ namespace JVMdotNET.ConsoleRunner
             classFiles.Add(Path.Combine(debugPath, "Program.class"));
             classFiles.Add(Path.Combine(debugPath, "Pokus.class"));
             classFiles.Add(Path.Combine(debugPath, "PokusChild.class"));
+            classFiles.Add(Path.Combine(debugPath, "PokInterface.class"));
 
 
             var jvm = new JavaVirtualMachine(classFiles.ToArray());

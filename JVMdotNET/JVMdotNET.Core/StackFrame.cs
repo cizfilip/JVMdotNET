@@ -2,6 +2,8 @@
 using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Attributes;
 using JVMdotNET.Core.ClassFile.ConstantPool;
+using JVMdotNET.Core.ClassLibrary;
+using JVMdotNET.Core.ClassLibrary.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +13,7 @@ namespace JVMdotNET.Core
 {
     internal class StackFrame
     {
-        private int pc;        
+        private int pc;
         private bool wasWideInstruction;
 
         private object[] locals;
@@ -20,17 +22,20 @@ namespace JVMdotNET.Core
         private JavaClass classObject;
         private MethodInfo method;
 
-        public StackFrame(MethodInfo method)
+        private CodeAttribute codeInfo;
+        private RuntimeEnvironment environment;
+
+        public StackFrame(MethodInfo method, RuntimeEnvironment environment)
         {
             this.pc = 0;
             this.wasWideInstruction = false;
             this.classObject = method.Class;
             this.method = method;
 
-            var code = method.Code;
-
-            this.locals = new object[code.MaxLocals];
-            this.operandStack = new Stack<object>(code.MaxStack);
+            this.codeInfo = method.Code;
+            this.locals = new object[codeInfo.MaxLocals];
+            this.operandStack = new Stack<object>(codeInfo.MaxStack);
+            this.environment = environment;
         }
 
         public void Unload()
@@ -39,6 +44,8 @@ namespace JVMdotNET.Core
             this.operandStack = null;
             this.classObject = null;
             this.method = null;
+            this.environment = null;
+            this.codeInfo = null;
         }
 
         public void PushToOperandStack(object value)
@@ -50,7 +57,7 @@ namespace JVMdotNET.Core
         {
             int localsIndex = 0;
 
-            if(thisInstance != null)
+            if (thisInstance != null)
             {
                 locals[0] = thisInstance;
                 localsIndex = 1;
@@ -71,9 +78,9 @@ namespace JVMdotNET.Core
             }
         }
 
-        public void Run(RuntimeEnvironment environment)
+        
+        public void Run(JavaInstance exception)
         {
-            CodeAttribute codeInfo = method.Code;
             byte[] code = codeInfo.Code;
             int codeLength = code.Length;
 
@@ -87,6 +94,17 @@ namespace JVMdotNET.Core
             float fValue = 0;
             double dValue = 0;
             JavaInstance instance = null;
+            MethodRefConstantPoolItem methodRef = null;
+
+            //exception handling - propagation
+            if (exception != null)
+            {
+                if (!TryThrow(exception))
+                {
+                    return;
+                }
+                environment.ExceptionHandled();
+            }
 
             while (pc < codeLength)
             {
@@ -147,15 +165,21 @@ namespace JVMdotNET.Core
                     case Instruction.sipush:
                         operandStack.Push((int)code.ReadShort(ref pc));
                         break;
+
+                    //LDC instruction throws if used for class, method type or method handle constant pool items
                     case Instruction.ldc:
-                        throw new NotImplementedException();
+                        index = code.ReadSByte(ref pc);
+                        Ldc(code, index);
                         break;
                     case Instruction.ldc_w:
-                        throw new NotImplementedException();
+                        index = code.ReadShort(ref pc);
+                        Ldc(code, index);
                         break;
                     case Instruction.ldc2_w:
-                        throw new NotImplementedException();
+                        index = code.ReadShort(ref pc);
+                        Ldc(code, index);
                         break;
+
                     case Instruction.iload:
                     case Instruction.lload:
                     case Instruction.fload:
@@ -204,11 +228,17 @@ namespace JVMdotNET.Core
                         array = operandStack.PopArray();
                         if (array == null)
                         {
-                            //TODO: throw NullPointerException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         if (index < 0 || index >= array.Length)
                         {
-                            //TODO: throw ArrayIndexOutOfBoundsException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(array[index]);
                         break;
@@ -266,11 +296,17 @@ namespace JVMdotNET.Core
                         array = operandStack.PopArray();
                         if (array == null)
                         {
-                            //TODO: throw NullPointerException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         if (index < 0 || index >= array.Length)
                         {
-                            //TODO: throw ArrayIndexOutOfBoundsException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         array[index] = value;
                         break;
@@ -349,7 +385,10 @@ namespace JVMdotNET.Core
                         iValue = operandStack.PopInt();
                         if (iValue == (int)0)
                         {
-                            //TODO: throw ArithmeticException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(operandStack.PopInt() / iValue);
                         break;
@@ -357,7 +396,10 @@ namespace JVMdotNET.Core
                         lValue = operandStack.PopLong();
                         if (lValue == (long)0)
                         {
-                            //TODO: throw ArithmeticException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(operandStack.PopLong() / lValue);
                         break;
@@ -373,7 +415,10 @@ namespace JVMdotNET.Core
                         iValue = operandStack.PopInt();
                         if (iValue == (int)0)
                         {
-                            //TODO: throw ArithmeticException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(operandStack.PopInt() % iValue);
                         break;
@@ -381,7 +426,10 @@ namespace JVMdotNET.Core
                         lValue = operandStack.PopLong();
                         if (lValue == (long)0)
                         {
-                            //TODO: throw ArithmeticException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.ArithmeticExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(operandStack.PopLong() % lValue);
                         break;
@@ -612,7 +660,10 @@ namespace JVMdotNET.Core
                         instance = operandStack.PopInstance();
                         if (instance == null)
                         {
-                            //TODO: throw NullPointerException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(
                             environment.GetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code),
@@ -623,7 +674,10 @@ namespace JVMdotNET.Core
                         instance = operandStack.PopInstance();
                         if (instance == null)
                         {
-                            //TODO: throw NullPointerException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         environment.SetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), 
                             instance,
@@ -631,16 +685,52 @@ namespace JVMdotNET.Core
                         break;
 
                     case Instruction.invokestatic:
-                        InvokeStatic(code, environment);
+                        InvokeStatic(code);
                         return;
                     case Instruction.invokevirtual:
-                        InvokeMethod(code, environment.PrepareVirtualOrInterfaceMethodInvocation);
+                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                        array = ExtractParameters(methodRef);
+
+                        instance = operandStack.PopInstance();
+                        if (instance == null)
+                        {
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
+                        }
+
+                        environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
                         return;
                     case Instruction.invokespecial:
-                        InvokeMethod(code, environment.PrepareSpecialMethodInvocation);
+                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                        array = ExtractParameters(methodRef);
+
+                        instance = operandStack.PopInstance();
+                        if (instance == null)
+                        {
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
+                        }
+
+                        environment.PrepareSpecialMethodInvocation(instance, array, methodRef);
                         return;
                     case Instruction.invokeinterface:
-                        InvokeMethod(code, environment.PrepareVirtualOrInterfaceMethodInvocation);
+                        methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
+                        array = ExtractParameters(methodRef);
+
+                        instance = operandStack.PopInstance();
+                        if (instance == null)
+                        {
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
+                        }
+
+                        environment.PrepareVirtualOrInterfaceMethodInvocation(instance, array, methodRef);
                         pc += 2; //Skip count and 0 parameters 
                         return;
 
@@ -651,27 +741,62 @@ namespace JVMdotNET.Core
                         operandStack.Push(environment.CreateInstance(GetConstantPoolItem<ClassConstantPoolItem>(code).Name));
                         break;
                     case Instruction.newarray:
-                        operandStack.Push(NewArray(operandStack.PopInt()));
+                        iValue = operandStack.PopInt();
+                        if (iValue < 0)
+                        {
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
+                            {
+                                return;
+                            }
+                        }
+                        operandStack.Push(new object[iValue]);
                         pc++; //skip atype
                         break;
                     case Instruction.anewarray:
                         pc += 2; //skip classRef
-                        operandStack.Push(NewArray(operandStack.PopInt()));
+                        iValue = operandStack.PopInt();
+                        if (iValue < 0)
+                        {
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
+                            {
+                                return;
+                            }
+                        }
+                        operandStack.Push(new object[iValue]);
                         break;
                     case Instruction.multianewarray:
                         pc += 2; //skip classRef
-                        NewMultiArray(code);
+                        int dimensions = code.ReadSByte(ref pc);
+                        var sizes = new int[dimensions];
+                        for (int i = dimensions - 1; i >= 0; i--)
+                        {
+                            sizes[i] = operandStack.PopInt();
+                            if (sizes[i] < 0)
+                            {
+                               if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NegativeArraySizeExceptionName)))
+                               {
+                                   return;
+                               }
+                            }
+                        }
+                        operandStack.Push(CreateMultiArray(sizes, 0));
                         break;
                     case Instruction.arraylength:
                         array = operandStack.PopArray();
                         if (array == null)
                         {
-                            //TODO: throw NullPointerException
+                            if (!TryThrow(environment.CreateInstance(ExceptionClassNames.NullPointerExceptionName)))
+                            {
+                                return;
+                            }
                         }
                         operandStack.Push(array.Length);
                         break;
                     case Instruction.athrow:
-
+                        if(!TryThrow(operandStack.PopInstance()))
+                        {
+                            return;
+                        }
                         break;
 
                     case Instruction.checkcast:
@@ -696,11 +821,27 @@ namespace JVMdotNET.Core
             }
         }
 
-        
+
+        #region Ldc instructions
+        private void Ldc(byte[] code, int index)
+        {
+            object value = classObject.ConstantPool.GetItem<ValueConstantPoolItem>(index).GetValue();
+            if (value is string)
+            {
+                JavaInstance stringInstance = environment.CreateInstance(StringClass.Name);
+                stringInstance.Fields[0] = value;
+                operandStack.Push(stringInstance);
+            }
+            else
+            {
+                operandStack.Push(value);
+            }
+        }
+        #endregion
 
         //TODO: check again if DUP implementations are correct...
         #region Dup instructions
-        
+
         private void Dup()
         {
             object value = operandStack.Peek();
@@ -765,7 +906,7 @@ namespace JVMdotNET.Core
             object value1 = operandStack.Pop();
             object value2 = operandStack.Pop();
 
-            if (value1.IsCategory2Type() && value2.IsCategory2Type()) 
+            if (value1.IsCategory2Type() && value2.IsCategory2Type())
             {// FORM 4
                 operandStack.PushMany(value1, value2, value1);
             }
@@ -883,7 +1024,7 @@ namespace JVMdotNET.Core
         #endregion
 
         #region Switch instructions
-        
+
         private void TableSwitch(byte[] code)
         {
             int startPC = pc - 1;
@@ -921,7 +1062,7 @@ namespace JVMdotNET.Core
             int matchOffsetPairsStart = pc;
 
             bool foundCase = false;
-            
+
             //binary search for matching switch case
             int min = 1;
             int max = nPairsLength;
@@ -938,7 +1079,7 @@ namespace JVMdotNET.Core
                 {
                     min = middle + 1;
                 }
-                else if(currentValue > value)
+                else if (currentValue > value)
                 {
                     max = middle - 1;
                 }
@@ -967,29 +1108,6 @@ namespace JVMdotNET.Core
 
         #region Array instructions
 
-        private object[] NewArray(int size)
-        {
-            if (size < 0)
-            {
-                //TODO: throw NegativeArraySizeException 
-            }
-            return new object[size];
-        }
-
-        private void NewMultiArray(byte[] code)
-        {
-            int dimensions = code.ReadSByte(ref pc);
-
-            var sizes = new int[dimensions];
-
-            for (int i = dimensions - 1; i >= 0; i--)
-            {
-                sizes[i] = operandStack.PopInt();
-            }
-
-            operandStack.Push(CreateMultiArray(sizes, 0));
-        }
-
         private object[] CreateMultiArray(int[] sizes, int index)
         {
             if (index == sizes.Length)
@@ -998,7 +1116,7 @@ namespace JVMdotNET.Core
             }
 
             int size = sizes[index];
-            object[] array = NewArray(size);
+            object[] array = new object[size];
             for (int i = 0; i < size; i++)
             {
                 array[i] = CreateMultiArray(sizes, index++);
@@ -1010,21 +1128,7 @@ namespace JVMdotNET.Core
 
         #region Invoke instructions
 
-        private void InvokeMethod(byte[] code, Action<JavaInstance, object[], MethodRefConstantPoolItem> environmentCall)
-        {
-            var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
-            var parameters = ExtractParameters(methodRef);
-
-            var instance = operandStack.PopInstance();
-            if (instance == null)
-            {
-                //TODO: throw NullPointerException
-            }
-
-            environmentCall(instance, parameters, methodRef);
-        }
-        
-        private void InvokeStatic(byte[] code, RuntimeEnvironment environment)
+        private void InvokeStatic(byte[] code)
         {
             var methodRef = GetConstantPoolItem<MethodRefConstantPoolItem>(code);
             var parameters = ExtractParameters(methodRef);
@@ -1044,6 +1148,47 @@ namespace JVMdotNET.Core
 
             return parameters;
         }
+
+        #endregion
+
+        #region Throw instruction
+        private bool TryThrow(JavaInstance exception)
+        {
+            ExceptionTableEntry[] exceptionTable = codeInfo.ExceptionTable;
+
+            bool catched = false;
+            foreach (var entry in exceptionTable)
+            {
+                if (pc >= entry.StartPC && pc < entry.EndPC) //The  start_pc is inclusive and  end_pc is exclusive; See JVM 7 spec page 106
+                {
+                    if (entry.CatchTypeIndex == 0 || CheckExcteptionType(exception, entry.CatchTypeIndex))
+                    {
+                        operandStack.Clear();
+                        operandStack.Push(exception);
+                        pc = entry.HandlerPC;
+                        catched = true;
+                    }
+                }
+            }
+
+            if (!catched)
+            {
+                environment.PrepareExceptionHandling(exception);
+            }
+
+            return catched;
+        }
+
+        private bool CheckExcteptionType(JavaInstance exception, int catchTypeIndex)
+        {
+            var catchClass = environment.GetClass(classObject.ConstantPool.GetItem<ClassConstantPoolItem>(catchTypeIndex).Name);
+            if (exception.JavaClass.IsSubClassOf(catchClass))
+            {
+                return true;
+            }
+            return false;
+        }
+
 
         #endregion
 
@@ -1096,7 +1241,7 @@ namespace JVMdotNET.Core
             return i;
         }
 
-        
+
 
         public static bool IsCategory2Type(this object obj)
         {

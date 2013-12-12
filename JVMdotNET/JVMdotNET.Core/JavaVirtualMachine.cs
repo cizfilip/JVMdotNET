@@ -26,6 +26,7 @@ namespace JVMdotNET.Core
         private void LoadSupportedClassFromJavaClassLibrary()
         {
             classArea.AddJavaClass(new ObjectClass());
+            classArea.AddJavaClass(new StringClass());
         }
 
         public void Run()

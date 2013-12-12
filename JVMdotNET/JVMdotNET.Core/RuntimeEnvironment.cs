@@ -12,11 +12,14 @@ namespace JVMdotNET.Core
         private Stack<StackFrame> stack;
         private RuntimeClassArea classArea;
 
+        //exception for exception propagation
+        private JavaInstance exception;
 
         public RuntimeEnvironment(RuntimeClassArea classArea)
         {
             this.stack = new Stack<StackFrame>();
             this.classArea = classArea;
+            this.exception = null;
         }
         
         public void PrepareReturn(object returnValue)
@@ -80,7 +83,7 @@ namespace JVMdotNET.Core
             }
             else
             {
-                StackFrame newFrame = new StackFrame(methodToRun);
+                StackFrame newFrame = new StackFrame(methodToRun, this);
                 newFrame.InitLocals(instance, parameters);
                 stack.Push(newFrame);
             }
@@ -88,9 +91,15 @@ namespace JVMdotNET.Core
 
         
 
-        public void PrepareExceptionHandling()
+        public void PrepareExceptionHandling(JavaInstance exception)
         {
+            stack.Pop().Unload();
+            this.exception = exception;
+        }
 
+        public void ExceptionHandled()
+        {
+            this.exception = null;
         }
 
         public JavaInstance CreateInstance(string className)
@@ -100,7 +109,29 @@ namespace JVMdotNET.Core
             return new JavaInstance(@class);
         }
 
-        
+        public JavaClass GetClass(string className)
+        {
+            return classArea.GetClass(className);
+        }
+
+        //TODO: static constructors.... maybe not this way
+        //public bool EnsureClassInitialized(ClassConstantPoolItem classRef)
+        //{
+        //    var javaClass = classArea.GetClass(classRef.Name);
+        //    if (!javaClass.IsInitialized)
+        //    {
+        //        javaClass.IsInitialized = true;
+
+        //        MethodInfo classConstructor;
+        //        if (javaClass.TryGetClassConstructor(out classConstructor))
+        //        {
+        //            PrepareMethodInvocation(classConstructor, null, new object[0]);
+        //            return true;
+        //        }
+        //    }
+
+        //    return false;
+        //}
 
         #region Fields Manipulation
         
@@ -134,19 +165,23 @@ namespace JVMdotNET.Core
 
         public void ExecuteProgram(MethodInfo mainMethod)
         {
-            StackFrame newFrame = new StackFrame(mainMethod);
+            StackFrame newFrame = new StackFrame(mainMethod, this);
             stack.Push(newFrame);
 
             Run();
+
+            if (exception != null)
+            {
+                //TODO: lepsi handlovani konce s exception
+                throw new InvalidOperationException(string.Format("Java program ended with exception {0}", exception.JavaClass.Name));
+            }
         }
 
         private void Run()
         {
-            StackFrame currentFrame;
             while (!stack.IsEmpty())
             {
-                currentFrame = stack.Peek();
-                currentFrame.Run(this);
+                stack.Peek().Run(exception);
             }
         }
     }

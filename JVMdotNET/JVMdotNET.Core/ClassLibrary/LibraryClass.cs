@@ -10,9 +10,11 @@ namespace JVMdotNET.Core.ClassLibrary
 {
     internal class LibraryClass : JavaClass
     {
-        public LibraryClass(string name, ClassAccessFlags accessFlags) 
+        public LibraryClass(string name, ClassAccessFlags accessFlags, string superName) : base()
         {
             base.Name = name;
+            //TODO: anebo rovnou JavaClass??
+            base.Super = superName;
             base.AccessFlags = accessFlags;
 
             base.Version = VersionInfo.Java70;
@@ -25,6 +27,16 @@ namespace JVMdotNET.Core.ClassLibrary
         protected void AddMethod(NativeMethodInfo methodInfo)
         {
             base.Methods.Add(methodInfo.Key, methodInfo);
+        }
+
+        protected void AddInstaceField(InstanceField fieldInfo)
+        {
+            base.InstanceFields.Add(fieldInfo.Info.Name, fieldInfo);
+        }
+
+        protected void AddStaticField(StaticField fieldInfo)
+        {
+            base.StaticFields.Add(fieldInfo.Info.Name, fieldInfo);
         }
     }
 }
