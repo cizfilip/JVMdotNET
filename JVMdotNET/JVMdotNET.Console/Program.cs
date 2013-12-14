@@ -20,7 +20,7 @@ namespace JVMdotNET.ConsoleRunner
                 var jvm = new JavaVirtualMachine(args);
                 jvm.Run();
             }
-            catch (UnhandledJavaException ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
