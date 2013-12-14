@@ -65,20 +65,7 @@ namespace JVMdotNET.Core.ClassFile
             }
         }
 
-        private void AddVirtualMethods(IDictionary<string, MethodInfo> superMethods)
-        {
-            foreach (var method in superMethods.Values)
-            {
-                if (!Methods.ContainsKey(method.Key) && 
-                    (method.AccessFlags.HasFlag(MethodAccessFlags.Public) || 
-                     method.AccessFlags.HasFlag(MethodAccessFlags.Protected)))
-                {
-                    Methods.Add(method.Key, method);
-                }
-            }
-        }
-
-        internal void AddFields(IEnumerable<FieldInfo> fields)
+        internal void AddFields(FieldInfo[] fields)
         {
             int instanceFieldsLength = InstanceFields.Count;
             int i = 0;
@@ -97,13 +84,39 @@ namespace JVMdotNET.Core.ClassFile
             }
         }
 
-        private void AddStaticFields(IEnumerable<StaticField> staticFields)
+        private void ResolveInstanceFields(IEnumerable<InstanceField> instanceFields)
+        {
+            foreach (var instanceField in instanceFields)
+            {
+                if (!InstanceFields.ContainsKey(instanceField.Info.Name))
+                {
+                    InstanceFields.Add(instanceField.Info.Name, instanceField);
+                }
+            }
+        }
+
+        private void ResolveStaticFields(IEnumerable<StaticField> staticFields)
         {
             foreach (var staticField in staticFields)
             {
-                if (!StaticFields.ContainsKey(staticField.Info.Name))
+                if (!StaticFields.ContainsKey(staticField.Info.Name) && 
+                    !staticField.Info.AccessFlags.HasFlag(FieldAccessFlags.Private))
                 {
                     StaticFields.Add(staticField.Info.Name, staticField);
+                }
+            }
+        }
+
+        private void ResolveVirtualMethods(IDictionary<string, MethodInfo> superMethods)
+        {
+            foreach (var method in superMethods.Values)
+            {
+                if (!Methods.ContainsKey(method.Key) &&
+                    !method.IsInitializationMethod &&
+                    (method.AccessFlags.HasFlag(MethodAccessFlags.Public) ||
+                     method.AccessFlags.HasFlag(MethodAccessFlags.Protected)))
+                {
+                    Methods.Add(method.Key, method);
                 }
             }
         }
@@ -118,9 +131,9 @@ namespace JVMdotNET.Core.ClassFile
             }
             
             SuperClass = classArea.GetClass(Super);
-            AddStaticFields(SuperClass.StaticFields.Values);
-            AddFields(SuperClass.InstanceFields.Values.Select(f => f.Info));
-            AddVirtualMethods(SuperClass.Methods);
+            ResolveStaticFields(SuperClass.StaticFields.Values);
+            ResolveInstanceFields(SuperClass.InstanceFields.Values);
+            ResolveVirtualMethods(SuperClass.Methods);
         }
 
         public object GetStaticFieldValue(string fieldName)
@@ -158,6 +171,11 @@ namespace JVMdotNET.Core.ClassFile
             }
 
             throw new MethodNotFoundException(string.Format("Method {0} not found in class {1}.", methodKey, Name));
+        }
+
+        public bool TryGetMethodInfo(string methodKey, out MethodInfo method)
+        {
+            return Methods.TryGetValue(methodKey, out method);
         }
 
         public bool TryGetClassConstructor(out MethodInfo classConstructor)

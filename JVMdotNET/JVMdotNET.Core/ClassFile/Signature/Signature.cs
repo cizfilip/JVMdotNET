@@ -27,6 +27,18 @@ namespace JVMdotNET.Core.ClassFile.Signature
             return new FieldSignature(ParseSingleType(descriptor));
         }
 
+        public static ArrayTypeInfo ParseArrayType(string descriptor)
+        {
+            TypeInfo arrayTypeInfo = ParseSingleType(descriptor);
+
+            if (arrayTypeInfo is ArrayTypeInfo)
+            {
+                return (ArrayTypeInfo)arrayTypeInfo;
+            }
+
+            throw new ArgumentException("Specified descriptor was not array type descriptor!");
+        }
+
         private static TypeInfo[] ParseTypes(string descriptorPart)
         {
             List<TypeInfo> parsedTypes = new List<TypeInfo>();

@@ -2,6 +2,7 @@
 using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Attributes;
 using JVMdotNET.Core.ClassFile.ConstantPool;
+using JVMdotNET.Core.ClassFile.Signature;
 using JVMdotNET.Core.ClassLibrary;
 using JVMdotNET.Core.ClassLibrary.Exceptions;
 using System;
@@ -125,6 +126,7 @@ namespace JVMdotNET.Core
             long lValue = 0;
             float fValue = 0;
             double dValue = 0;
+            byte atype = 0;
             JavaInstance instance = null;
             MethodRefConstantPoolItem methodRef = null;
 
@@ -188,7 +190,7 @@ namespace JVMdotNET.Core
 
                 //LDC instruction throws if used for class, method type or method handle constant pool items
                 case Instruction.ldc:
-                    index = code.ReadSByte(ref pc);
+                    index = code.ReadByte(ref pc);
                     environment.LoadConstant(index);
                     return;
                 case Instruction.ldc_w:
@@ -248,18 +250,17 @@ namespace JVMdotNET.Core
                     array = operandStack.PopArray();
                     if (array == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     if (index < 0 || index >= array.Length)
                     {
-                        environment.SignalException(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName);
+                        environment.SignalException(ArrayIndexOutOfBoundsExceptionClass.Name, ClassDefaults.IntVoidMethodDescriptor, new object[1] { index });
                         return;
                     }
                     operandStack.Push(array[index]);
                     return;
-
-
+                    
                 case Instruction.istore:
                 case Instruction.lstore:
                 case Instruction.fstore:
@@ -303,7 +304,7 @@ namespace JVMdotNET.Core
                 case Instruction.lastore:
                 case Instruction.fastore:
                 case Instruction.dastore:
-                case Instruction.aastore:
+                case Instruction.aastore: //TODO: mel by vyhazovat i ArrayStoreException .... JVM 7 spec page 371
                 case Instruction.bastore:
                 case Instruction.castore:
                 case Instruction.sastore:
@@ -312,12 +313,12 @@ namespace JVMdotNET.Core
                     array = operandStack.PopArray();
                     if (array == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     if (index < 0 || index >= array.Length)
                     {
-                        environment.SignalException(ExceptionClassNames.ArrayIndexOutOfBoundsExceptionName);
+                        environment.SignalException(ArrayIndexOutOfBoundsExceptionClass.Name, ClassDefaults.IntVoidMethodDescriptor, new object[1] { index });
                         return;
                     }
                     array[index] = value;
@@ -397,7 +398,7 @@ namespace JVMdotNET.Core
                     iValue = operandStack.PopInt();
                     if (iValue == (int)0)
                     {
-                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
+                        environment.SignalException(ArithmeticExceptionClass.Name, ClassDefaults.StringVoidMethodDescriptor, new object[1] { environment.CreateStringInstance("/ by zero") });
                         return;
                     }
                     operandStack.Push(operandStack.PopInt() / iValue);
@@ -406,7 +407,7 @@ namespace JVMdotNET.Core
                     lValue = operandStack.PopLong();
                     if (lValue == (long)0)
                     {
-                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
+                        environment.SignalException(ArithmeticExceptionClass.Name, ClassDefaults.StringVoidMethodDescriptor, new object[1] { environment.CreateStringInstance("/ by zero") });
                         return;
                     }
                     operandStack.Push(operandStack.PopLong() / lValue);
@@ -423,7 +424,7 @@ namespace JVMdotNET.Core
                     iValue = operandStack.PopInt();
                     if (iValue == (int)0)
                     {
-                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
+                        environment.SignalException(ArithmeticExceptionClass.Name, ClassDefaults.StringVoidMethodDescriptor, new object[1] { environment.CreateStringInstance("/ by zero") });
                         return;
                     }
                     operandStack.Push(operandStack.PopInt() % iValue);
@@ -432,7 +433,7 @@ namespace JVMdotNET.Core
                     lValue = operandStack.PopLong();
                     if (lValue == (long)0)
                     {
-                        environment.SignalException(ExceptionClassNames.ArithmeticExceptionName);
+                        environment.SignalException(ArithmeticExceptionClass.Name, ClassDefaults.StringVoidMethodDescriptor, new object[1] { environment.CreateStringInstance("/ by zero") });
                         return;
                     }
                     operandStack.Push(operandStack.PopLong() % lValue);
@@ -501,7 +502,8 @@ namespace JVMdotNET.Core
                     return;
                 case Instruction.iinc:
                     index = ReadWithWideCheck(code, unsetWideFlag: false);
-                    iValue = ReadWithWideCheck(code);
+                    iValue = wasWideInstruction ? code.ReadShort(ref pc) : code.ReadSByte(ref pc); //not using ReadWithWideCheck, because here must be SIGNED byte read
+                    wasWideInstruction = false;
                     locals[index] = (int)locals[index] + iValue;
                     return;
                 case Instruction.i2l:
@@ -566,58 +568,60 @@ namespace JVMdotNET.Core
                     DCmp(nanIsOne: true);
                     return;
                 case Instruction.ifeq:
-                    Jump<int>(v => v == 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v == 0, code);
                     return;
                 case Instruction.ifne:
-                    Jump<int>(v => v != 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v != 0, code);
                     return;
                 case Instruction.iflt:
-                    Jump<int>(v => v < 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v < 0, code);
                     return;
                 case Instruction.ifge:
-                    Jump<int>(v => v >= 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v >= 0, code);
                     return;
                 case Instruction.ifgt:
-                    Jump<int>(v => v > 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v > 0, code);
                     return;
                 case Instruction.ifle:
-                    Jump<int>(v => v <= 0, code.ReadShort(ref pc));
+                    Jump<int>(v => v <= 0, code);
                     return;
                 case Instruction.if_icmpeq:
-                    JumpTwoValues<int>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 == v2, code);
                     return;
                 case Instruction.if_icmpne:
-                    JumpTwoValues<int>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 != v2, code);
                     return;
                 case Instruction.if_icmplt:
-                    JumpTwoValues<int>((v1, v2) => v1 < v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 < v2, code);
                     return;
                 case Instruction.if_icmpge:
-                    JumpTwoValues<int>((v1, v2) => v1 >= v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 >= v2, code);
                     return;
                 case Instruction.if_icmpgt:
-                    JumpTwoValues<int>((v1, v2) => v1 > v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 > v2, code);
                     return;
                 case Instruction.if_icmple:
-                    JumpTwoValues<int>((v1, v2) => v1 <= v2, code.ReadShort(ref pc));
+                    JumpTwoValues<int>((v1, v2) => v1 <= v2, code);
                     return;
                 case Instruction.if_acmpeq:
-                    JumpTwoValues<JavaInstance>((v1, v2) => v1 == v2, code.ReadShort(ref pc));
+                    JumpTwoValues<JavaInstance>((v1, v2) => v1 == v2, code);
                     return;
                 case Instruction.if_acmpne:
-                    JumpTwoValues<JavaInstance>((v1, v2) => v1 != v2, code.ReadShort(ref pc));
+                    JumpTwoValues<JavaInstance>((v1, v2) => v1 != v2, code);
                     return;
                 case Instruction.ifnull:
-                    Jump<JavaInstance>(i => i == null, code.ReadShort(ref pc));
+                    Jump<JavaInstance>(i => i == null, code);
                     return;
                 case Instruction.ifnonnull:
-                    Jump<JavaInstance>(i => i != null, code.ReadShort(ref pc));
+                    Jump<JavaInstance>(i => i != null, code);
                     return;
                 case Instruction.@goto:
-                    pc = (int)code.ReadShort(ref pc);
+                    newPC = pc - 1;
+                    pc = newPC + (int)code.ReadShort(ref pc);
                     return;
                 case Instruction.goto_w:
-                    pc = code.ReadInt(ref pc);
+                    newPC = pc - 1;
+                    pc = newPC + code.ReadInt(ref pc);
                     return;
                 case Instruction.jsr:
                     newPC = (int)code.ReadShort(ref pc);
@@ -662,7 +666,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     environment.GetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), instance);
@@ -672,7 +676,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     environment.SetFieldValue(GetConstantPoolItem<FieldRefConstantPoolItem>(code), instance, value);
@@ -688,7 +692,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
 
@@ -701,7 +705,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
 
@@ -714,7 +718,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
 
@@ -729,42 +733,43 @@ namespace JVMdotNET.Core
                     iValue = operandStack.PopInt();
                     if (iValue < 0)
                     {
-                        environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
+                        environment.SignalException(NegativeArraySizeExceptionClass.Name);
                         return;
                     }
-                    operandStack.Push(new object[iValue]);
-                    pc++; //skip atype
+                    atype = code.ReadByte(ref pc);
+                    operandStack.Push(CreateArrayWithDefaultValues(atype, iValue));
                     return;
                 case Instruction.anewarray:
                     pc += 2; //skip classRef
                     iValue = operandStack.PopInt();
                     if (iValue < 0)
                     {
-                        environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
+                        environment.SignalException(NegativeArraySizeExceptionClass.Name);
                         return;
                     }
                     operandStack.Push(new object[iValue]);
                     return;
                 case Instruction.multianewarray:
-                    pc += 2; //skip classRef
-                    int dimensions = code.ReadSByte(ref pc);
+                    index = code.ReadShort(ref pc);
+                    var arrayTypeInfo = Signature.ParseArrayType(ConstantPool.GetItem<ClassConstantPoolItem>(index).Name);
+                    int dimensions = code.ReadByte(ref pc);
                     var sizes = new int[dimensions];
                     for (int i = dimensions - 1; i >= 0; i--)
                     {
                         sizes[i] = operandStack.PopInt();
                         if (sizes[i] < 0)
                         {
-                            environment.SignalException(ExceptionClassNames.NegativeArraySizeExceptionName);
+                            environment.SignalException(NegativeArraySizeExceptionClass.Name);
                             return;
                         }
                     }
-                    operandStack.Push(CreateMultiArray(sizes, 0));
+                    operandStack.Push(CreateMultiArray(arrayTypeInfo, sizes, 0));
                     return;
                 case Instruction.arraylength:
                     array = operandStack.PopArray();
                     if (array == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     operandStack.Push(array.Length);
@@ -773,7 +778,7 @@ namespace JVMdotNET.Core
                     instance = operandStack.PopInstance();
                     if (instance == null)
                     {
-                        environment.SignalException(ExceptionClassNames.NullPointerExceptionName);
+                        environment.SignalException(NullPointerExceptionClass.Name);
                         return;
                     }
                     environment.SignalException(instance);
@@ -801,6 +806,8 @@ namespace JVMdotNET.Core
                     throw new InvalidOperationException("Unknown instruction!");
             }
         }
+
+        
 
         #region Dup instructions
 
@@ -964,22 +971,26 @@ namespace JVMdotNET.Core
 
         #region Jump instructions
 
-        private void Jump<T>(Func<T, bool> when, int newPC)
+        private void Jump<T>(Func<T, bool> when, byte[] code)
         {
+            int oldPC = pc - 1;
+            int offset = code.ReadShort(ref pc);
             T value = (T)operandStack.Pop();
             if (when(value))
             {
-                pc = newPC;
+                pc = oldPC + offset;
             }
         }
 
-        private void JumpTwoValues<T>(Func<T, T, bool> when, int newPC)
+        private void JumpTwoValues<T>(Func<T, T, bool> when, byte[] code)
         {
+            int oldPC = pc - 1;
+            int offset = code.ReadShort(ref pc);
             T value2 = (T)operandStack.Pop();
             T value1 = (T)operandStack.Pop();
             if (when(value1, value2))
             {
-                pc = newPC;
+                pc = oldPC + offset;
             }
         }
 
@@ -1070,18 +1081,57 @@ namespace JVMdotNET.Core
 
         #region Array instructions
 
-        private object[] CreateMultiArray(int[] sizes, int index)
+        private object[] CreateArrayWithDefaultValues(byte atype, int length)
+        {
+            switch (atype)
+            {
+                case 4: //boolean
+                case 5: //char
+                case 8: //byte
+                case 9: //short
+                case 10: //int
+                    return Enumerable.Repeat<object>((int)0, length).ToArray();
+                case 6: //float
+                    return Enumerable.Repeat<object>((float)0.0, length).ToArray();
+                case 7: //double
+                    return Enumerable.Repeat<object>((double)0.0, length).ToArray();
+                case 11: //long
+                    return Enumerable.Repeat<object>((long)0, length).ToArray();
+                default:
+                    throw new InvalidOperationException("Unknown atype in newarray instruction!");
+            }
+        }
+
+        private object CreateMultiArray(ArrayTypeInfo arrayTypeInfo, int[] sizes, int index)
         {
             if (index == sizes.Length)
             {
-                return null;
+                switch (arrayTypeInfo.ElementType.Type)
+                {
+                    case JVMType.Boolean:
+                    case JVMType.Char:
+                    case JVMType.Byte:
+                    case JVMType.Short:
+                    case JVMType.Int:
+                        return (int)0;
+                    case JVMType.Float:
+                        return (float)0.0;
+                    case JVMType.Double:
+                        return (double)0.0;
+                    case JVMType.Long:
+                        return (long)0;
+                    case JVMType.Object:
+                        return null;
+                    default:
+                        throw new InvalidOperationException("Illegal element type in multianewarray instruction!");
+                }
             }
 
             int size = sizes[index];
             object[] array = new object[size];
             for (int i = 0; i < size; i++)
             {
-                array[i] = CreateMultiArray(sizes, index++);
+                array[i] = CreateMultiArray(arrayTypeInfo, sizes, index + 1);
             }
             return array;
         }

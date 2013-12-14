@@ -1,5 +1,8 @@
 ﻿using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassFile.Loader;
+using JVMdotNET.Core.ClassLibrary;
+using JVMdotNET.Core.ClassLibrary.Exceptions;
+using JVMdotNET.Core.ClassLibrary.Io;
 using JVMdotNET.Core.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -84,8 +87,53 @@ namespace JVMdotNET.Core
                     throw new InvalidOperationException("ExceptionInInitializerError");
                 }
             }
+        }
 
-            
+        public MethodInfo FindMainMethod()
+        {
+            int methodsFound = 0;
+            MethodInfo mainMethod = null;
+
+            foreach (var javaClass in classes.Values)
+            {
+                MethodInfo mainCandidate;
+                if (javaClass.TryGetMethodInfo("main([Ljava/lang/String;)V", out mainCandidate) &&
+                    mainCandidate.AccessFlags.HasFlag(MethodAccessFlags.Public) &&
+                    mainCandidate.AccessFlags.HasFlag(MethodAccessFlags.Static))
+                {
+                    methodsFound++;
+                    mainMethod = mainCandidate;
+                }
+            }
+
+            switch (methodsFound)
+            {
+                case 0:
+                    throw new InvalidOperationException("main method not found.");
+                case 1:
+                    return mainMethod;
+                default:
+                    throw new InvalidOperationException("More than one main method found!");
+            }
+        }
+
+        public void LoadSupportedClassFromJavaClassLibrary()
+        {
+            AddJavaClass(new ObjectClass());
+            AddJavaClass(new StringClass());
+
+            //System.out.print ... (limited support)
+            AddJavaClass(new SystemClass());
+            AddJavaClass(new PrintStreamClass());
+
+            //Exceptions
+            AddJavaClass(new ThrowableClass());
+            AddJavaClass(new ExceptionClass());
+            AddJavaClass(new RuntimeExceptionClass());
+            AddJavaClass(new ArithmeticExceptionClass());
+            AddJavaClass(new ArrayIndexOutOfBoundsExceptionClass());
+            AddJavaClass(new NegativeArraySizeExceptionClass());
+            AddJavaClass(new NullPointerExceptionClass());
         }
 
     }

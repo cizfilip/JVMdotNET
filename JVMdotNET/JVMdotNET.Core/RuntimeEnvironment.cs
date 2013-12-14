@@ -13,6 +13,13 @@ namespace JVMdotNET.Core
     {
         private Stack<StackFrame> stack;
         private RuntimeClassArea classArea;
+        public RuntimeClassArea ClassArea
+        {
+            get
+            {
+                return classArea;
+            }
+        }
 
         private JavaInstance unhandledException;
 
@@ -31,14 +38,19 @@ namespace JVMdotNET.Core
             object value = currentStackFrame.ConstantPool.GetItem<ValueConstantPoolItem>(constantPoolIndex).GetValue();
             if (value is string)
             {
-                JavaInstance stringInstance = CreateJavaInstance(StringClass.Name);
-                stringInstance.Fields[0] = value;
-                currentStackFrame.PushToOperandStack(stringInstance);
+                currentStackFrame.PushToOperandStack(CreateStringInstance((string)value));
             }
             else
             {
                 currentStackFrame.PushToOperandStack(value);
             }
+        }
+
+        public JavaInstance CreateStringInstance(string value)
+        {
+            JavaInstance stringInstance = CreateJavaInstance(StringClass.Name);
+            stringInstance.Fields[0] = value;
+            return stringInstance;
         }
 
         public void CreateInstance(string className)
@@ -107,7 +119,8 @@ namespace JVMdotNET.Core
             PrepareMethodInvocation(methodToRun, instance, parameters);
         }
 
-        private void PrepareMethodInvocation(MethodInfo methodToRun, JavaInstance instance, object[] parameters)
+        //directly called only by native mathods implementation
+        internal void PrepareMethodInvocation(MethodInfo methodToRun, JavaInstance instance, object[] parameters)
         {
             if (methodToRun.IsNative)
             {
@@ -130,9 +143,25 @@ namespace JVMdotNET.Core
 
         #region Exception handling
 
-        public void SignalException(string exceptionClassName)
+        public void SignalException(string exceptionClassName, string ctorDescriptor = null, object[] parameters = null)
         {
-            SignalException(CreateJavaInstance(exceptionClassName));
+            var exceptionInstance = CreateJavaInstance(exceptionClassName);
+            NativeMethodInfo nativeCtor = null;
+            if (ctorDescriptor == null)
+            {
+                nativeCtor = exceptionInstance.JavaClass.GetMethodInfo(ClassDefaults.ConstructorMethodName + ClassDefaults.VoidMethodDescriptor) as NativeMethodInfo;
+            }
+            else
+            {
+                nativeCtor = exceptionInstance.JavaClass.GetMethodInfo(ClassDefaults.ConstructorMethodName + ctorDescriptor) as NativeMethodInfo;
+            }
+
+            if (nativeCtor != null)
+            {
+                nativeCtor.Implementation(exceptionInstance, parameters ?? ClassDefaults.EmptyParameters, this);
+            }
+
+            SignalException(exceptionInstance);
         }
         
         public void SignalException(JavaInstance exception)
@@ -214,7 +243,7 @@ namespace JVMdotNET.Core
 
         public JavaInstance ExecuteProgram(MethodInfo mainMethod)
         {
-            PrepareMethodInvocation(mainMethod, null, new object[0]);
+            PrepareMethodInvocation(mainMethod, null, ClassDefaults.EmptyParameters);
 
             Run();
 

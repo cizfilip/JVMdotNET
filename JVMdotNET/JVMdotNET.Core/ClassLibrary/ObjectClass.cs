@@ -26,7 +26,8 @@ namespace JVMdotNET.Core.ClassLibrary
             //equals
             base.AddMethod(new NativeMethodInfo(this, MethodAccessFlags.Public, "equals", "(Ljava/lang/Object;)Z", Equals));
 
-            //TODO: toString
+            //toString
+            base.AddMethod(new NativeMethodInfo(this, MethodAccessFlags.Public, "toString", "()Ljava/lang/String;", ToString));
         }
 
         
@@ -43,6 +44,11 @@ namespace JVMdotNET.Core.ClassLibrary
                 return 1;
             }
             return 0;
+        }
+
+        private object ToString(JavaInstance instance, object[] parameters, RuntimeEnvironment environment)
+        {
+            return environment.CreateStringInstance(string.Format("{0}@{1}", instance.JavaClass.Name.Replace('/','.'), instance.GetHashCode().ToString("X")));
         }
 
        

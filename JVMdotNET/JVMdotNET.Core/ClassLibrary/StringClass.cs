@@ -13,7 +13,7 @@ namespace JVMdotNET.Core.ClassLibrary
         public StringClass() 
             : base(
                 Name,
-                ClassAccessFlags.Public | ClassAccessFlags.Super,
+                ClassAccessFlags.Public | ClassAccessFlags.Super | ClassAccessFlags.Final,
                 ObjectClass.Name
             ) 
         {
@@ -23,13 +23,16 @@ namespace JVMdotNET.Core.ClassLibrary
 
 
             //Constructor
-            base.AddMethod(new NativeMethodInfo(this, MethodAccessFlags.Public, ClassDefaults.ConstructorMethodName, ClassDefaults.VoidMethodDescriptor, null));
+            base.AddMethod(new NativeMethodInfo(this, MethodAccessFlags.Public, ClassDefaults.ConstructorMethodName, ClassDefaults.VoidMethodDescriptor, Cinit));
 
             
+        }
 
-          
-
-            //TODO: toString
+        private object Cinit(JavaInstance instance, object[] parameters, RuntimeEnvironment environment)
+        {
+            RunNativeSuperConstructor(ClassDefaults.VoidMethodDescriptor, instance, parameters, environment);
+            instance.Fields[0] = "";
+            return null;
         }
        
     }

@@ -1,10 +1,9 @@
-﻿using JVMdotNET.Core.Bytecode;
-using JVMdotNET.Core.ClassFile;
+﻿using JVMdotNET.Core.ClassFile;
 using JVMdotNET.Core.ClassLibrary;
+using JVMdotNET.Core.ClassLibrary.Exceptions;
+using JVMdotNET.Core.ClassLibrary.Io;
+using JVMdotNET.Core.Exceptions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace JVMdotNET.Core
 {
@@ -19,32 +18,39 @@ namespace JVMdotNET.Core
             {
                 classArea.LoadClassFile(classFile);
             }
-
-            LoadSupportedClassFromJavaClassLibrary();
         }
-
-        private void LoadSupportedClassFromJavaClassLibrary()
-        {
-            classArea.AddJavaClass(new ObjectClass());
-            classArea.AddJavaClass(new StringClass());
-        }
+                
 
         public void Run()
         {
             RuntimeEnvironment environment = new RuntimeEnvironment(classArea);
 
-            var javaClass = classArea.GetClass("Program");
-            var mainMethod = javaClass.GetMethodInfo("main([Ljava/lang/String;)V");
+            var mainMethod = classArea.FindMainMethod();
+
+            classArea.LoadSupportedClassFromJavaClassLibrary();
 
             var exception = environment.ExecuteProgram(mainMethod);
 
             if (exception != null)
             {
-                //TODO: lepsi handlovani konce s exception
-                throw new InvalidOperationException(string.Format("Java program ended with exception {0}", exception.JavaClass.Name));
+                throw new UnhandledJavaException(string.Format("Java program ended with exception {0} : {1}",
+                   exception.JavaClass.Name.Replace('/','.'), ExtractExceptionMessage(exception)));
             }
         }
 
+        private string ExtractExceptionMessage(JavaInstance exception)
+        {
+            JavaInstance message = (JavaInstance)exception.Fields[0];
+
+            if (message == null)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                return (string)message.Fields[0];
+            }
+        }
 
 
     }

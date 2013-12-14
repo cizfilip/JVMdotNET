@@ -13,7 +13,6 @@ namespace JVMdotNET.Core.ClassLibrary
         public LibraryClass(string name, ClassAccessFlags accessFlags, string superName) : base()
         {
             base.Name = name;
-            //TODO: anebo rovnou JavaClass??
             base.Super = superName;
             base.AccessFlags = accessFlags;
 
@@ -37,6 +36,17 @@ namespace JVMdotNET.Core.ClassLibrary
         protected void AddStaticField(StaticField fieldInfo)
         {
             base.StaticFields.Add(fieldInfo.Info.Name, fieldInfo);
+        }
+
+        protected object RunNativeSuperConstructor(string ctorDescriptor, JavaInstance instance, object[] parameters, RuntimeEnvironment environment)
+        {
+            var baseCtor = (NativeMethodInfo)base.SuperClass.GetMethodInfo(ClassDefaults.ConstructorMethodName + ctorDescriptor);
+            return baseCtor.Implementation(instance, parameters, environment);
+        }
+
+        protected static string NameToFieldType(string name)
+        {
+            return "L" + name + ";";
         }
     }
 }
