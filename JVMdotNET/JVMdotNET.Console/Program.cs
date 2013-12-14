@@ -1,5 +1,6 @@
 ﻿using JVMdotNET.Core;
 using JVMdotNET.Core.ClassFile.Signature;
+using JVMdotNET.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,22 +15,15 @@ namespace JVMdotNET.ConsoleRunner
     {
         static void Main(string[] args)
         {
-            string debugPath = @"C:\\Users\\Filip\\SkyDrive\\Eclipse\\RUNKnapsack\\bin\\runknapsack";
-
-            List<string> classFiles = new List<string>();
-            classFiles.Add(Path.Combine(debugPath, "RUNKnapsack.class"));
-            classFiles.Add(Path.Combine(debugPath, "Knapsack.class"));
-            classFiles.Add(Path.Combine(debugPath, "Algorithm.class"));
-            
-            //classFiles.Add(Path.Combine(debugPath, "Pokus.class"));
-            //classFiles.Add(Path.Combine(debugPath, "PokusChild.class"));
-            //classFiles.Add(Path.Combine(debugPath, "PokInterface.class"));
-
-
-            var jvm = new JavaVirtualMachine(classFiles.ToArray());
-
-            jvm.Run();
-
+            try
+            {
+                var jvm = new JavaVirtualMachine(args);
+                jvm.Run();
+            }
+            catch (UnhandledJavaException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
 
             Console.ReadKey();
         }
