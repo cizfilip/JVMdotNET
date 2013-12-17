@@ -1043,7 +1043,7 @@ namespace JVMdotNET.Core
             int currentIndex;
             int currentValue;
 
-            while (max >= min)
+            while (!foundCase && max >= min)
             {
                 middle = (max - min) / 2 + min;
                 currentIndex = middle * 8 + matchOffsetPairsStart;
